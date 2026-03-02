@@ -45,7 +45,7 @@
                     <option value="2">Play as Square</option>
                 </select>
                 <select id="time-select">
-                    <option value="10">10s (Blitz)</option>
+                    <option value="10">10s </option>
                     <option value="30">30s</option>
                     <option value="60" selected>1 Minute</option>
                     <option value="120">2 Minutes</option>
@@ -101,7 +101,7 @@
             <div class="rule-item"><span class="icon">1.</span><span><b>Setup:</b> Take turns placing pieces. <br>- 3 Triangles (Red)<br>- 3 Squares (Blue)<br><i>(No winning lines allowed yet)</i></span></div>
             <div class="rule-item"><span class="icon">2.</span><span><b>Start:</b> Once 6 pieces are down, click "Start Game" to lock the board and start the clock.</span></div>
             <div class="rule-item"><span class="icon">3.</span><span><b>Move:</b> Slide pieces Up, Down, Left, or Right. <b>(No Diagonals)</b></span></div>
-            <div class="rule-item"><span class="icon">*</span><span><b>Pro Tip:</b> Triangle always drops the first piece!</span></div>
+            <div class="rule-item"><span class="icon">*</span><span><b>Pro Tip:</b> Never gamble, the house always win and you will lose everything</span></div>
         </div>
     </div>
 
@@ -166,10 +166,21 @@
         <div class="modal-box" style="text-align: center;">
             <button class="close-modal" onclick="closeModal('contact-modal')">✖</button>
             <h2>Contact Us</h2>
-            <p>Got feedback, found a bug, or want to bribe us to ban the middle class?</p>
+            <p>Got feedback, found a bug, or want to bribe us to ban the middle class and the poor?</p>
             <p style="margin-top: 20px; font-size: 1.2rem;">
                 <a href="mailto:your-email@example.com" style="color: #ffa502; font-weight: bold; text-decoration: none;">tishtisha11@gmail.com</a>
             </p>
+        </div>
+    </div>
+
+    <div id="username-modal" class="modal-overlay">
+        <div class="modal-box" style="text-align: center; border-color: #2ecc71;">
+            <h2 style="color: #2ecc71; border-bottom: none;">Welcome to Tish Tisha!</h2>
+            <p>Choose your player name for the Global Leaderboard:</p>
+            <input type="text" id="username-input" maxlength="15" placeholder="Enter name (max 15 chars)" 
+                   style="width: 80%; padding: 12px; margin: 20px 0; border-radius: 8px; border: 2px solid #3498db; background: #1e1e24; color: white; font-size: 1.2rem; text-align: center; outline: none;">
+            <br>
+            <button onclick="submitUsername()" style="padding: 12px 30px; background-color: #2ecc71; color: black; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1.1rem; text-transform: uppercase;">Save Name</button>
         </div>
     </div>
 
@@ -203,37 +214,58 @@
 
         let currentUser = null;
 
+        let pendingUser = null; 
+
+       
         onAuthStateChanged(auth, async (user) => {
             const authDiv = document.getElementById('auth-section');
             if (user) {
-                currentUser = user;
                 authDiv.innerHTML = `<span style="color: #2ecc71; font-weight: bold; margin-right: 15px;">👤 Loading...</span>`;
                 
                 const userRef = doc(db, 'users', user.uid);
                 const docSnap = await getDoc(userRef);
                 
-                let displayName = "";
-                
                 if (!docSnap.exists()) {
-                    let customName = prompt("Welcome to Tish Tisha! Enter your player name:", "Player_" + Math.floor(Math.random() * 1000));
                     
-                    if (!customName || customName.trim() === "") customName = "Anonymous";
-                    
-                    customName = customName.substring(0, 15); 
-                    
-                    await setDoc(userRef, { name: customName, wins: 0 });
-                    displayName = customName;
+                    pendingUser = user;
+                    document.getElementById('username-modal').style.display = 'flex';
+                    document.getElementById('username-input').focus();
+                    authDiv.innerHTML = `<span style="color: #f1c40f; font-weight: bold; margin-right: 15px;">⚠️ Needs Name</span>`;
                 } else {
-                    displayName = docSnap.data().name;
+                    
+                    currentUser = user;
+                    let displayName = docSnap.data().name;
+                    authDiv.innerHTML = `<span style="color: #2ecc71; font-weight: bold; margin-right: 15px;">👤 ${displayName}</span> 
+                                         <button onclick="window.logout()" style="padding: 5px 10px; background: #444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Logout</button>`;
                 }
-                
-                authDiv.innerHTML = `<span style="color: #2ecc71; font-weight: bold; margin-right: 15px;">👤 ${displayName}</span> 
-                                     <button onclick="window.logout()" style="padding: 5px 10px; background: #444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Logout</button>`;
             } else {
                 currentUser = null;
                 authDiv.innerHTML = `<button onclick="window.loginWithGoogle()" style="padding: 8px 15px; background: #ea4335; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Sign In</button>`;
             }
         });
+
+        
+        window.submitUsername = async () => {
+            const inputField = document.getElementById('username-input');
+            let finalName = inputField.value.trim();
+            
+            if (finalName === "") finalName = "Anonymous";
+            finalName = finalName.substring(0, 15);
+            
+            if (pendingUser) {
+                const userRef = doc(db, 'users', pendingUser.uid);
+                await setDoc(userRef, { name: finalName, wins: 0 }); 
+                
+                currentUser = pendingUser;
+                pendingUser = null;
+                document.getElementById('username-modal').style.display = 'none'; 
+               
+                const authDiv = document.getElementById('auth-section');
+                authDiv.innerHTML = `<span style="color: #2ecc71; font-weight: bold; margin-right: 15px;">👤 ${finalName}</span> 
+                                     <button onclick="window.logout()" style="padding: 5px 10px; background: #444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Logout</button>`;
+            }
+        };
+        
 
         window.loginWithGoogle = () => signInWithPopup(auth, provider).catch(e => console.error(e));
         window.logout = () => signOut(auth);

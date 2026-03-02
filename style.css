@@ -204,7 +204,7 @@ button {
     padding: 12px 20px; border: none; font-weight: bold; cursor: pointer;
     border-radius: 5px; font-size: 1rem; flex: 1; transition: all 0.2s;
     text-transform: uppercase; letter-spacing: 1px;
-    touch-action: manipulation; /* Mobile Lock */
+    touch-action: manipulation; 
 }
 #action-btn { background-color: #3498db; color: white; box-shadow: 0 4px 0 #2980b9; }
 #action-btn:active:not(:disabled) { transform: translateY(4px); box-shadow: none; }

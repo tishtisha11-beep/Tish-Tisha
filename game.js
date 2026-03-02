@@ -568,7 +568,7 @@ function closeModal(id) {
 }
 
 window.onclick = function(event) {
-    if (event.target.classList.contains('modal-overlay')) {
+    if (event.target.classList.contains('modal-overlay') && event.target.id !== 'username-modal') {
         event.target.style.display = "none";
     }
 };
