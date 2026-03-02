@@ -14,10 +14,10 @@ let waitingPlayer = null;
 io.on('connection', (socket) => {
     console.log('A player connected:', socket.id);
 
-    socket.on('create_room', (roomCode) => {
-        socket.join(roomCode);
-        rooms[roomCode] = { player1Socket: socket, players: [socket.id] };
-        console.log(`Room ${roomCode} created by ${socket.id}`);
+    socket.on('create_room', (data) => {
+        socket.join(data.roomCode);
+        rooms[data.roomCode] = { player1Socket: socket, players: [socket.id], time: data.time };
+        console.log(`Room ${data.roomCode} created with ${data.time}s timer.`);
     });
 
     socket.on('join_room', (roomCode) => {
@@ -27,32 +27,31 @@ io.on('connection', (socket) => {
             
             const p1Socket = rooms[roomCode].player1Socket;
             const p2Socket = socket;
-           
-            p1Socket.emit('start_game', { roomCode: roomCode, role: 1 });
-            p2Socket.emit('start_game', { roomCode: roomCode, role: 2 });
+            const gameTime = rooms[roomCode].time;
             
-            console.log(`${socket.id} joined room ${roomCode}. Game starting!`);
+            p1Socket.emit('start_game', { roomCode: roomCode, role: 1, time: gameTime });
+            p2Socket.emit('start_game', { roomCode: roomCode, role: 2, time: gameTime });
         } else {
             socket.emit('room_error', 'Room is full or does not exist.');
         }
     });
 
-    socket.on('find_random_match', () => {
+    socket.on('find_random_match', (timePreference) => {
         if (waitingPlayer && waitingPlayer !== socket) {
             const roomCode = 'MATCH_' + Math.random().toString(36).substring(2, 8);
             socket.join(roomCode);
             waitingPlayer.join(roomCode);
-            
             rooms[roomCode] = { players: [waitingPlayer.id, socket.id] };
 
-            waitingPlayer.emit('start_game', { roomCode: roomCode, role: 1 });
-            socket.emit('start_game', { roomCode: roomCode, role: 2 });
+            const gameTime = waitingPlayer.timePreference || 60;
+
+            waitingPlayer.emit('start_game', { roomCode: roomCode, role: 1, time: gameTime });
+            socket.emit('start_game', { roomCode: roomCode, role: 2, time: gameTime });
             
-            console.log(`Random match started in ${roomCode}`);
             waitingPlayer = null; 
         } else {
+            socket.timePreference = timePreference;
             waitingPlayer = socket;
-            console.log(`${socket.id} is waiting for a random match...`);
         }
     });
 

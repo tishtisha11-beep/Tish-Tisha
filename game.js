@@ -140,17 +140,18 @@ const cells = document.querySelectorAll('.cell');
 function handleActionBtn() {
     initAudio(); 
     let mode = modeSelect.value;
+    let selectedTime = parseInt(timeSelect.value); 
     
     if (mode === 'online') {
         overlay.style.display = 'flex';
         overlayText.innerText = "Searching for random player...";
-        socket.emit('find_random_match');
+        socket.emit('find_random_match', selectedTime); 
         return;
     } else if (mode === 'invite') {
         if (!myRoomCode) copyInviteLink(); 
         overlay.style.display = 'flex';
         overlayText.innerText = "Waiting for friend to join link...";
-        socket.emit('create_room', myRoomCode);
+        socket.emit('create_room', { roomCode: myRoomCode, time: selectedTime }); 
         return;
     }
 
@@ -169,9 +170,11 @@ socket.on('start_game', (data) => {
     overlay.style.display = 'none';
     isOnlineGame = true;
     myRoomCode = data.roomCode;
-    
- 
     myOnlineRole = data.role; 
+    
+    timeSelect.value = data.time.toString();
+    timeLeft = data.time;
+    updateTimerUI();
     
     modeSelect.disabled = true; shapeSelect.disabled = true; timeSelect.disabled = true;
     
