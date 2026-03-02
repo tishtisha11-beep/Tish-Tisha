@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <meta property="og:title" content="Tish Tisha - Strategy Game">
+    <meta property="og:description" content="A deceptive strategy puzzle. Better than Tic-Tac-Toe.">
+    <meta property="og:image" content="preview.jpg"> <title>Tish Tisha - Strategy Game</title>
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 800px; margin-top: 15px; padding: 0 20px; box-sizing: border-box; z-index: 20;">
+        <div id="auth-section">
+            </div>
+        <button onclick="openModal('leaderboard-modal'); window.loadLeaderboard();" style="padding: 8px 15px; background: #f1c40f; color: black; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; flex: none; width: auto;">🏆 Leaderboard</button>
+    </div>
+
+    <canvas id="fireworksCanvas"></canvas>
+
+    <div class="game-container">
+        <div class="game-area">
+            <h1>Tish Tisha</h1>
+            
+            <div class="scoreboard">
+                <div class="score-title" id="score-title">Vs Computer Score</div>
+                <div>
+                    <span class="score-red">🔺 <span id="score-tri">0</span></span> 
+                    &nbsp;|&nbsp; 
+                    <span class="score-blue">🟦 <span id="score-sq">0</span></span>
+                </div>
+            </div>
+            
+            <div class="top-bar">
+                <select id="mode-select" onchange="handleModeChange()">
+                    <option value="pve">1 Player (vs CPU)</option>
+                    <option value="local">2 Players (Local)</option>
+                    <option value="online">Play Online (Random)</option>
+                    <option value="invite">Play with Friend (Link)</option>
+                </select>
+                <select id="shape-select">
+                    <option value="1">Play as Triangle</option>
+                    <option value="2">Play as Square</option>
+                </select>
+                <select id="time-select">
+                    <option value="10">10s (Blitz)</option>
+                    <option value="30">30s</option>
+                    <option value="60" selected>1 Minute</option>
+                    <option value="120">2 Minutes</option>
+                    <option value="300">5 Minutes</option>
+                </select>
+            </div>
+
+            <div id="invite-container">
+                <button class="link-btn" onclick="copyInviteLink()">🔗 Copy Invite Link</button>
+                <div id="link-copied-msg" style="color: #2ecc71; font-size: 0.8rem; display: none; margin-top: 5px;">Link copied to clipboard! Send to a friend.</div>
+            </div>
+
+            <div id="timer-display">01:00</div>
+            <div id="status-bar">Choose settings & Click Start Setup</div>
+
+            <div class="board-wrapper">
+                <div id="online-overlay">
+                    <div class="spinner"></div>
+                    <div id="overlay-text" style="font-size: 1.1rem;">Searching for opponent...</div>
+                    <button class="cancel-btn" onclick="cancelOnline()">Cancel Search</button>
+                </div>
+
+                <svg viewBox="0 0 360 360">
+                    <line x1="60" y1="20" x2="60" y2="340" />
+                    <line x1="180" y1="20" x2="180" y2="340" />
+                    <line x1="300" y1="20" x2="300" y2="340" />
+                    <line x1="20" y1="60" x2="340" y2="60" />
+                    <line x1="20" y1="180" x2="340" y2="180" />
+                    <line x1="20" y1="300" x2="340" y2="300" />
+                </svg>
+
+                <div class="grid">
+                    <div class="cell" onclick="handleTap(0)" id="cell-0"></div>
+                    <div class="cell" onclick="handleTap(1)" id="cell-1"></div>
+                    <div class="cell" onclick="handleTap(2)" id="cell-2"></div>
+                    <div class="cell" onclick="handleTap(3)" id="cell-3"></div>
+                    <div class="cell" onclick="handleTap(4)" id="cell-4"></div>
+                    <div class="cell" onclick="handleTap(5)" id="cell-5"></div>
+                    <div class="cell" onclick="handleTap(6)" id="cell-6"></div>
+                    <div class="cell" onclick="handleTap(7)" id="cell-7"></div>
+                    <div class="cell" onclick="handleTap(8)" id="cell-8"></div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button id="action-btn" onclick="handleActionBtn()">Start Setup</button>
+                <button id="reset-btn" onclick="resetGame()">Reset</button>
+            </div>
+        </div>
+
+        <div class="rules-panel">
+            <h3 id="panel-title">How to Play</h3>
+            <div class="rule-item"><span class="icon">1.</span><span><b>Setup:</b> Take turns placing pieces. <br>- 3 Triangles (Red)<br>- 3 Squares (Blue)<br><i>(No winning lines allowed yet)</i></span></div>
+            <div class="rule-item"><span class="icon">2.</span><span><b>Start:</b> Once 6 pieces are down, click "Start Game" to lock the board and start the clock.</span></div>
+            <div class="rule-item"><span class="icon">3.</span><span><b>Move:</b> Slide pieces Up, Down, Left, or Right. <b>(No Diagonals)</b></span></div>
+            <div class="rule-item"><span class="icon">*</span><span><b>Pro Tip:</b> Triangle always drops the first piece!</span></div>
+        </div>
+    </div>
+
+    <div class="content-section">
+        <h2 style="padding-top: 20px;">Tish Tisha: The Strategy Game Better Than Tic-Tac-Toe</h2>
+        <p>Tish Tisha is a deceptive strategy puzzle. It looks like a simple Tic-Tac-Toe game, but it solves the biggest problem with that classic game: <strong>you can move the pieces.</strong> In Tish Tisha, placing the pieces is just the beginning. The real puzzle starts when you have to slide your pieces to trap your opponent. The faster you solve it, the better.</p>
+        
+        <h3>How to Play</h3>
+        <p><strong>Phase 1: The Setup</strong><br>Easily start by placing your three pieces. Each player (Triangle vs. Square) takes turns placing <strong>3 pieces</strong> on the board. You cannot win during the setup phase; you must plan ahead for the movement phase.</p>
+        <p><strong>Phase 2: The Movement</strong><br>Once all 6 pieces are on the board, you slide pieces to adjacent <strong>empty squares</strong> beside your piece. You can only move <strong>Up, Down, Left, or Right</strong>. Diagonal moves are NOT allowed in this version!</p>
+        <p><strong>How to Win</strong><br>To win, you have to align the pieces horizontally or vertically only. Aligning them diagonally won't count as a win. The "Sudden Death" timer rule applies: if no one wins before the end of time, the last one to move before the clock ends wins. So it’s either you win before the timer ends, or you be the last one to move.</p>
+        <p><strong>Draws & Modes</strong><br>If one of the players is stuck and can't move, then it’s automatically a draw. It’s a very simple game that anyone can play with just an internet connection. If you don't want to play against humans, you can play against the computer.</p>
+
+        <h3>A Personal Story</h3>
+        <p>I used to play this game when I was very young with my family and friends. My father taught me how to play it. I thought it was a new game we invented because none of my friends in school knew about it, so I taught them how to play it. But apparently, it existed wayyyy before. Honestly, I don't know the full history of the game, and I am not claiming to take any credit for creating this concept. I'm just a guy remaking his childhood game to share it with the world.</p>
+
+        <h3>History (For the Nerds)</h3>
+        <p>While we call it <strong>Tish Tisha</strong>, this game is actually a variant of the ancient game <strong>Three Men's Morris</strong> (sometimes called Nine Holes). It is quite literally one of the oldest board games in human history.</p>
+        <p>Archaeologists have discovered diagrams of this exact game board carved into the stone roofing slabs of the temple at Kurna in Egypt, dating all the way back to roughly 1400 BC. That means people were playing this game over 3,000 years ago! From Egypt, the game spread across the ancient world. Board layouts have been found carved into the steps of Roman basilicas, where citizens would play to pass the time. It eventually evolved into the more complex <em>Nine Men's Morris</em>, which was hugely popular in Medieval England and was even mentioned by William Shakespeare in his play <em>A Midsummer Night's Dream</em>.</p>
+        <p>Because the game is so simple to draw in the dirt or on a piece of wood, almost every culture has its own version. In the Philippines, a very similar game is called <em>Tapatan</em>. In Ghana, children play a version called <em>Achi</em>. In ancient China, it was known as <em>Luk Tsut K'i</em>.</p>
+        <p><em>(Note: Honestly, I read all this history from Wikipedia. I just wanted to share how cool it is that a game I played as a kid has been played by people for thousands of years.)</em></p>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 Tish Tisha Games. All rights reserved.</p>
+        <div style="display: flex; justify-content: center; gap: 20px; margin-top: 10px;">
+            <a href="#" onclick="openModal('privacy-modal'); return false;">Privacy Policy</a>
+            <a href="#" onclick="openModal('terms-modal'); return false;">Terms of Service</a>
+            <a href="#" onclick="openModal('contact-modal'); return false;">Contact Us</a>
+        </div>
+    </footer>
+
+    <div id="privacy-modal" class="modal-overlay">
+        <div class="modal-box">
+            <button class="close-modal" onclick="closeModal('privacy-modal')">✖</button>
+            <h2>Privacy Policy</h2>
+            <p>We don't care about your data. I am not part of any government nor care who you are, nor does my name end with 'berg' and have one of the biggest social media companies. You are right, I am not Futenmatengutenberg, the owner of SpyingOnYou, the famous social media company.</p>
+            <p>But for a piece of shawarma, I might share it with any government that offers that. Joking, I want tacos.</p>
+            <p><em>(Real talk: We temporarily use local storage to save your red vs blue score on your phone, and temporary connection data to match you online. That's it.)</em></p>
+        </div>
+    </div>
+
+    <div id="terms-modal" class="modal-overlay">
+        <div class="modal-box">
+            <button class="close-modal" onclick="closeModal('terms-modal')">✖</button>
+            <h2>Terms of Service</h2>
+            <ol style="line-height: 1.6; padding-left: 20px; color: #ccc;">
+                <li>By playing Tish Tisha, you agree to these terms.</li>
+                <li>Please don't cheat, no one likes a cheater loser.</li>
+                <li>I'm broke and I have no money, so sorry that there are ads in the best game ever. But you can donate, and in the future I'll make it ad-free, who knows.</li>
+                <li>Don't commit war crimes, we don't like war criminals here.</li>
+                <li>Don't visit certain private islands, we don't like pdfiles.</li>
+                <li>No one from musseschuts should visit the website, I can't even pronounce it correctly.</li>
+                <li>The top 1000 richest people aren't allowed to play this game, this game is for the poor and middle class.</li>
+                <li>If you ARE in the top 1000 and play, donate to us, and we will reconsider our rules and ban the poor and middle class.</li>
+                <li>Life is short, be yourself.</li>
+            </ol>
+        </div>
+    </div>
+
+    <div id="contact-modal" class="modal-overlay">
+        <div class="modal-box" style="text-align: center;">
+            <button class="close-modal" onclick="closeModal('contact-modal')">✖</button>
+            <h2>Contact Us</h2>
+            <p>Got feedback, found a bug, or want to bribe us to ban the middle class?</p>
+            <p style="margin-top: 20px; font-size: 1.2rem;">
+                <a href="mailto:your-email@example.com" style="color: #ffa502; font-weight: bold; text-decoration: none;">your-email@example.com</a>
+            </p>
+        </div>
+    </div>
+
+    <div id="leaderboard-modal" class="modal-overlay">
+        <div class="modal-box">
+            <button class="close-modal" onclick="closeModal('leaderboard-modal')">✖</button>
+            <h2 style="color: #f1c40f;">🏆 Global Leaderboard</h2>
+            <div id="leaderboard-list" style="margin-top: 20px;">
+                </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, updateDoc, increment, collection, query, orderBy, limit, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBoDt3QMT85j9pBCGannBFy_RuMO1rAQNE",
+            authDomain: "tish-tisha-ab3c2.firebaseapp.com",
+            projectId: "tish-tisha-ab3c2",
+            storageBucket: "tish-tisha-ab3c2.firebasestorage.app",
+            messagingSenderId: "735308558393",
+            appId: "1:735308558393:web:0fc42142bd017380d39de8"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        let currentUser = null;
+
+        onAuthStateChanged(auth, async (user) => {
+            const authDiv = document.getElementById('auth-section');
+            if (user) {
+                currentUser = user;
+                authDiv.innerHTML = `<span style="color: #2ecc71; font-weight: bold; margin-right: 15px;">👤 Loading...</span>`;
+                
+                const userRef = doc(db, 'users', user.uid);
+                const docSnap = await getDoc(userRef);
+                
+                let displayName = "";
+                
+                if (!docSnap.exists()) {
+                    let customName = prompt("Welcome to Tish Tisha! Enter your player name:", "Player_" + Math.floor(Math.random() * 1000));
+                    
+                    if (!customName || customName.trim() === "") customName = "Anonymous";
+                    
+                    customName = customName.substring(0, 15); 
+                    
+                    await setDoc(userRef, { name: customName, wins: 0 });
+                    displayName = customName;
+                } else {
+                    displayName = docSnap.data().name;
+                }
+                
+                authDiv.innerHTML = `<span style="color: #2ecc71; font-weight: bold; margin-right: 15px;">👤 ${displayName}</span> 
+                                     <button onclick="window.logout()" style="padding: 5px 10px; background: #444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Logout</button>`;
+            } else {
+                currentUser = null;
+                authDiv.innerHTML = `<button onclick="window.loginWithGoogle()" style="padding: 8px 15px; background: #ea4335; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Sign In</button>`;
+            }
+        });
+
+        window.loginWithGoogle = () => signInWithPopup(auth, provider).catch(e => console.error(e));
+        window.logout = () => signOut(auth);
+
+        window.recordWin = async () => {
+            if (currentUser) {
+                const userRef = doc(db, 'users', currentUser.uid);
+                await updateDoc(userRef, { wins: increment(1) }).catch(e => console.log("DB update error", e));
+            }
+        };
+
+        window.loadLeaderboard = async () => {
+            const list = document.getElementById('leaderboard-list');
+            list.innerHTML = "<p style='text-align: center; color: #888;'>Loading top players...</p>";
+            try {
+                const q = query(collection(db, "users"), orderBy("wins", "desc"), limit(10));
+                const querySnapshot = await getDocs(q);
+                list.innerHTML = "";
+                let rank = 1;
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    let trophy = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '🏅';
+                    list.innerHTML += `<div style="display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #444; font-size: 1.1rem;">
+                        <span><b>${rank}.</b> ${data.name}</span>
+                        <span style="color: gold; font-weight: bold;">${trophy} ${data.wins} Wins</span>
+                    </div>`;
+                    rank++;
+                });
+                if (list.innerHTML === "") list.innerHTML = "<p style='text-align: center;'>No scores yet. Be the first to win!</p>";
+            } catch(e) {
+                list.innerHTML = "<p style='text-align: center; color: #ff4757;'>Error loading leaderboard. Database might be locked.</p>";
+                console.error(e);
+            }
+        };
+    </script>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
