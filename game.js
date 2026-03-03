@@ -86,15 +86,29 @@ function handleModeChange() {
     let mode = modeSelect.value;
     shapeSelect.style.display = (mode === 'pve') ? 'inline-block' : 'none';
     inviteContainer.style.display = (mode === 'invite') ? 'block' : 'none';
+    
+    actionBtn.style.display = (mode === 'invite') ? 'none' : 'block';
+    
     document.getElementById('link-copied-msg').style.display = 'none';
     updateScoreboardUI();
 }
 
 function copyInviteLink() {
+    initAudio(); 
+    let selectedTime = parseInt(timeSelect.value); 
+    
     myRoomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
     let link = window.location.origin + "?room=" + myRoomCode;
+    
     navigator.clipboard.writeText(link).then(() => {
-        document.getElementById('link-copied-msg').style.display = 'block';
+        overlay.style.display = 'flex';
+        overlayText.innerText = "Link copied! Waiting for friend to join...";
+        
+        socket.emit('create_room', { roomCode: myRoomCode, time: selectedTime });
+    }).catch(() => {
+        overlay.style.display = 'flex';
+        overlayText.innerText = `Room: ${myRoomCode} - Waiting for friend...`;
+        socket.emit('create_room', { roomCode: myRoomCode, time: selectedTime });
     });
 }
 
@@ -102,12 +116,17 @@ function copyInviteLink() {
 window.onload = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const joinRoomCode = urlParams.get('room');
+    
     if (joinRoomCode) {
         modeSelect.value = 'invite';
         handleModeChange();
+      
         overlay.style.display = 'flex';
-        overlayText.innerText = "Joining Friend's Room...";
+        overlayText.innerText = "Joining friend's room...";
+        
         socket.emit('join_room', joinRoomCode);
+        
+        window.history.pushState({}, document.title, window.location.pathname);
     }
 };
 
@@ -147,13 +166,7 @@ function handleActionBtn() {
         overlayText.innerText = "Searching for random player...";
         socket.emit('find_random_match', selectedTime); 
         return;
-    } else if (mode === 'invite') {
-        if (!myRoomCode) copyInviteLink(); 
-        overlay.style.display = 'flex';
-        overlayText.innerText = "Waiting for friend to join link...";
-        socket.emit('create_room', { roomCode: myRoomCode, time: selectedTime }); 
-        return;
-    }
+    } 
 
     if (gamePhase === 'INIT') startSetupPhase(false);
     else if (gamePhase === 'READY') startPlayPhase();
