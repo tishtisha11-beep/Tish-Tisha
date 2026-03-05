@@ -197,7 +197,11 @@ function handleActionBtn() {
 
 function cancelOnline() { 
     overlay.style.display = 'none'; 
-    socket.emit('cancel_search');
+    socket.emit('cancel_search'); 
+    if (myRoomCode) {
+        socket.emit('leave_room', myRoomCode);
+        myRoomCode = null;
+    }
     window.history.pushState({}, document.title, window.location.pathname);
 }
 
@@ -307,7 +311,12 @@ function startSetupPhase(isOnline = false) {
 
     currentPlayer = 1; 
     piecesDropped = { 1: 0, 2: 0 };
-    modeSelect.disabled = true; shapeSelect.disabled = true; timeSelect.disabled = true;
+    
+    if (isOnlineGame || isOnline) {
+        modeSelect.disabled = true; 
+        shapeSelect.disabled = true; 
+        timeSelect.disabled = true;
+    }
     
     actionBtn.innerText = isOnlineGame ? "Online Match Active" : "Setup in Progress...";
     actionBtn.disabled = true;
