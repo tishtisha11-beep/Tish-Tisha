@@ -308,3 +308,54 @@ footer a:hover { color: #3498db; }
     transform: translateY(-2px);
     box-shadow: 0 6px 12px rgba(230, 126, 34, 0.4);
 }
+
+.top-nav-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 800px;
+    margin-top: 15px;
+    padding: 0 20px;
+    box-sizing: border-box;
+    z-index: 20;
+}
+
+.nav-buttons-right {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.header-leaderboard-btn {
+    padding: 8px 15px;
+    background: #f1c40f;
+    color: black;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    height: 35px;
+    box-sizing: border-box;
+    flex: none;
+}
+
+
+@media (max-width: 600px) {
+    .top-nav-bar {
+        flex-direction: column;
+        gap: 15px; 
+        padding: 0 10px;
+    }
+    
+    .nav-buttons-right {
+        justify-content: center;
+        width: 100%;
+    }
+    
+    .donate-btn, .header-leaderboard-btn {
+        font-size: 12px;
+        padding: 8px 12px;
+        letter-spacing: 0px;
+    }
+}

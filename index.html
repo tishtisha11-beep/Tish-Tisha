@@ -15,15 +15,14 @@
 </head>
 <body>
 
-   <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 800px; margin-top: 15px; padding: 0 20px; box-sizing: border-box; z-index: 20;">
+   <div class="top-nav-bar">
         <div id="auth-section"></div>
         
-        <div style="display: flex; gap: 10px; align-items: center;">
-            <a href="https://ko-fi.com/tishtisha"_blank" class="donate-btn">🥙 Shawarma?</a>
-            <button onclick="openModal('leaderboard-modal'); window.loadLeaderboard();" style="padding: 8px 15px; background: #f1c40f; color: black; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; flex: none; width: auto;"> Leaderboard</button>
+        <div class="nav-buttons-right">
+            <a href="https://ko-fi.com/tishtisha" target="_blank" class="donate-btn">🥙 Shawarma?</a>
+            <button class="header-leaderboard-btn" onclick="openModal('leaderboard-modal'); window.loadLeaderboard();">Leaderboard</button>
         </div>
-    </div>
-
+    </div> 
     <canvas id="fireworksCanvas"></canvas>
 
     <div class="game-container">
