@@ -16,27 +16,29 @@ io.on('connection', (socket) => {
 
     socket.on('create_room', (data) => {
         socket.join(data.roomCode);
-        rooms[data.roomCode] = { player1Socket: socket, players: [socket.id], time: data.time };
+        rooms[data.roomCode] = { player1Socket: socket, players: [socket.id], time: data.time, p1Name: data.playerName };
         console.log(`Room ${data.roomCode} created with ${data.time}s timer.`);
     });
 
-    socket.on('join_room', (roomCode) => {
+    socket.on('join_room', (data) => {
+        const roomCode = data.roomCode;
         if (rooms[roomCode] && rooms[roomCode].players.length === 1) {
             socket.join(roomCode);
             rooms[roomCode].players.push(socket.id);
+            rooms[roomCode].p2Name = data.playerName; 
             
             const p1Socket = rooms[roomCode].player1Socket;
             const p2Socket = socket;
             const gameTime = rooms[roomCode].time;
             
-            p1Socket.emit('start_game', { roomCode: roomCode, role: 1, time: gameTime });
-            p2Socket.emit('start_game', { roomCode: roomCode, role: 2, time: gameTime });
+            p1Socket.emit('start_game', { roomCode: roomCode, role: 1, time: gameTime, opponentName: rooms[roomCode].p2Name });
+            p2Socket.emit('start_game', { roomCode: roomCode, role: 2, time: gameTime, opponentName: rooms[roomCode].p1Name });
         } else {
             socket.emit('room_error', 'Room is full or does not exist.');
         }
     });
 
-    socket.on('find_random_match', (timePreference) => {
+    socket.on('find_random_match', (data) => {
         if (waitingPlayer && waitingPlayer !== socket) {
             const roomCode = 'MATCH_' + Math.random().toString(36).substring(2, 8);
             socket.join(roomCode);
@@ -44,13 +46,16 @@ io.on('connection', (socket) => {
             rooms[roomCode] = { players: [waitingPlayer.id, socket.id] };
 
             const gameTime = waitingPlayer.timePreference || 60;
+            const p1Name = waitingPlayer.playerName;
+            const p2Name = data.playerName;
 
-            waitingPlayer.emit('start_game', { roomCode: roomCode, role: 1, time: gameTime });
-            socket.emit('start_game', { roomCode: roomCode, role: 2, time: gameTime });
+            waitingPlayer.emit('start_game', { roomCode: roomCode, role: 1, time: gameTime, opponentName: p2Name });
+            socket.emit('start_game', { roomCode: roomCode, role: 2, time: gameTime, opponentName: p1Name });
             
             waitingPlayer = null; 
         } else {
-            socket.timePreference = timePreference;
+            socket.timePreference = data.timePreference;
+            socket.playerName = data.playerName; 
             waitingPlayer = socket;
         }
     });

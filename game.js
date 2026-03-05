@@ -114,7 +114,7 @@ function copyInviteLink() {
         overlay.style.display = 'flex';
         overlayText.innerText = "Link copied! Waiting for friend to join...";
         
-        socket.emit('create_room', { roomCode: myRoomCode, time: selectedTime });
+        socket.emit('create_room', { roomCode: myRoomCode, time: selectedTime, playerName: window.myPlayerName });
     }).catch(() => {
         overlay.style.display = 'flex';
         overlayText.innerText = `Room: ${myRoomCode} - Waiting for friend...`;
@@ -134,7 +134,7 @@ window.onload = () => {
         overlay.style.display = 'flex';
         overlayText.innerText = "Joining friend's room...";
         
-        socket.emit('join_room', joinRoomCode);
+        socket.emit('join_room', { roomCode: joinRoomCode, playerName: window.myPlayerName });
         
         window.history.pushState({}, document.title, window.location.pathname);
     }
@@ -171,7 +171,6 @@ function handleActionBtn() {
     let mode = modeSelect.value;
     let selectedTime = parseInt(timeSelect.value); 
     
-    
     if (gamePhase === 'OVER') {
         if (isOnlineGame) {
             actionBtn.innerText = "Waiting for opponent...";
@@ -186,7 +185,9 @@ function handleActionBtn() {
     if (mode === 'online') {
         overlay.style.display = 'flex';
         overlayText.innerText = "Searching for random player...";
-        socket.emit('find_random_match', selectedTime); 
+        
+        socket.emit('find_random_match', { timePreference: selectedTime, playerName: window.myPlayerName }); 
+        
         return;
     } 
 
@@ -207,12 +208,18 @@ socket.on('start_game', (data) => {
     myRoomCode = data.roomCode;
     myOnlineRole = data.role; 
     
+    let oppName = data.opponentName || "Random";
+    document.getElementById('score-title').innerText = "Vs " + oppName;
+    
+    chatContainer.style.display = 'flex';
+    chatMessages.innerHTML = `<div style="text-align:center; color:#888; font-size:0.8rem; margin-top:5px;">Chat connected with ${oppName}!</div>`;
+    
+
     timeSelect.value = data.time.toString();
     timeLeft = data.time;
     updateTimerUI();
     
     modeSelect.disabled = true; shapeSelect.disabled = true; timeSelect.disabled = true;
-    
     actionBtn.style.display = 'block'; 
 
     startSetupPhase(true); 
@@ -236,6 +243,7 @@ socket.on('opponent_moved', (data) => {
 });
 
 socket.on('opponent_disconnected', () => {
+    appendChatMessage("Opponent left the room.", 'other');
     updateStatus("Opponent Disconnected! You win.", true);
     playSound('win');
     setTimeout(() => {
@@ -652,7 +660,10 @@ function resetGame() {
     timerDisplay.style.color = "#888";
     
     handleModeChange(); drawBoard(); cancelOnline();
+    
     chatContainer.style.display = 'none';
+    chatMessages.innerHTML = ''; 
+    
     resetBtn.disabled = false;
     resetBtn.style.backgroundColor = '#ffa502';
     resetBtn.style.color = 'black';
