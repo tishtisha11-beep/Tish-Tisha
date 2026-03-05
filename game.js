@@ -171,15 +171,15 @@ function handleActionBtn() {
     let mode = modeSelect.value;
     let selectedTime = parseInt(timeSelect.value); 
     
-if (gamePhase === 'OVER' && isOnlineGame) {
-        actionBtn.innerText = "Waiting for opponent...";
-        actionBtn.disabled = true;
-        socket.emit('request_rematch', myRoomCode);
-        return;
-    }if (gamePhase === 'OVER' && isOnlineGame) {
-        actionBtn.innerText = "Waiting for opponent...";
-        actionBtn.disabled = true;
-        socket.emit('request_rematch', myRoomCode);
+    
+    if (gamePhase === 'OVER') {
+        if (isOnlineGame) {
+            actionBtn.innerText = "Waiting for opponent...";
+            actionBtn.disabled = true;
+            socket.emit('request_rematch', myRoomCode);
+        } else {
+            resetGame(); 
+        }
         return;
     }
 
@@ -255,6 +255,15 @@ socket.on('opponent_wants_rematch', () => {
     }
 });
 
+socket.on('opponent_wants_rematch', () => {
+    if (gamePhase === 'OVER') {
+        updateStatus("Opponent wants a rematch! Click Accept to agree.");
+        actionBtn.innerText = "✅ Accept Rematch";
+        actionBtn.style.backgroundColor = '#f1c40f';
+        actionBtn.style.color = 'black';
+    }
+});
+
 socket.on('rematch_accepted', () => {
     stopTimer();
     
@@ -262,6 +271,8 @@ socket.on('rematch_accepted', () => {
     selectedIndex = null; 
     piecesDropped = { 1: 0, 2: 0 };
     
+    drawBoard(); 
+   
     myOnlineRole = (myOnlineRole === 1) ? 2 : 1;
     
     timeLeft = parseInt(timeSelect.value);
@@ -594,30 +605,32 @@ function endGame(msg, color) {
     statusDiv.style.color = 'black';
     statusDiv.style.borderColor = color;
 
-    if (isOnlineGame) {
-        actionBtn.innerText = "🔄 Request Rematch";
-        actionBtn.disabled = false;
-        actionBtn.style.backgroundColor = '#27ae60';
-        actionBtn.style.color = 'white';
+    if(document.getElementById('reset-btn')) {
+        document.getElementById('reset-btn').disabled = false;
+        document.getElementById('reset-btn').style.backgroundColor = '#ffa502';
+        document.getElementById('reset-btn').style.color = 'black';
     }
+    if(document.getElementById('abort-btn')) document.getElementById('abort-btn').style.display = 'none';
 
-    resetBtn.disabled = false;
-    resetBtn.style.backgroundColor = '#ffa502';
-    resetBtn.style.color = 'black';
     
-    abortBtn.style.display = 'none'; 
-
     if (isOnlineGame) {
         actionBtn.innerText = "🔄 Request Rematch";
         actionBtn.disabled = false;
         actionBtn.style.backgroundColor = '#27ae60';
         actionBtn.style.color = 'white';
         
-        if (modeSelect.value === 'online') {
-            newRandomBtn.style.display = 'block';
+        if (modeSelect.value === 'online' && document.getElementById('new-random-btn')) {
+            document.getElementById('new-random-btn').style.display = 'block';
         }
+    } else {
+        
+        actionBtn.innerText = "Play Again";
+        actionBtn.disabled = false;
+        actionBtn.style.backgroundColor = '#3498db';
+        actionBtn.style.color = 'white';
     }
-    }
+}
+    
 
 function resetGame() {
     stopTimer(); board = [0,0,0,0,0,0,0,0,0]; gamePhase = 'INIT';
@@ -725,3 +738,48 @@ function findNewRandom() {
     resetGame();
     setTimeout(() => { handleActionBtn(); }, 300); 
 }
+
+function handleResetClick() {
+    if (isOnlineGame) {
+        if (confirm("Restart the match? This will clear the board for both players.")) {
+            socket.emit('force_restart', myRoomCode);
+            softReset();
+        }
+    } else {
+        resetGame(); 
+    }
+}
+
+function softReset() {
+    stopTimer(); 
+    board = [0,0,0, 0,0,0, 0,0,0]; 
+    selectedIndex = null; 
+    piecesDropped = { 1: 0, 2: 0 };
+    gamePhase = 'INIT';
+    
+    drawBoard(); 
+    
+    timeLeft = parseInt(timeSelect.value);
+    updateTimerUI();
+    
+    startSetupPhase(true); 
+    
+    let shapeName = myOnlineRole === 1 ? "Triangle (Red)" : "Square (Blue)";
+    let firstMoveMsg = myOnlineRole === 1 ? "Your turn to drop!" : "Waiting for opponent...";
+    
+    statusDiv.style.background = '#3d3d4a';
+    statusDiv.style.color = 'white';
+    statusDiv.style.borderColor = '#555';
+    updateStatus(`Match Restarted! You are ${shapeName}. ${firstMoveMsg}`);
+    
+    if (document.getElementById('reset-btn')) {
+        document.getElementById('reset-btn').disabled = false;
+        document.getElementById('reset-btn').style.backgroundColor = '#ffa502';
+    }
+}
+
+socket.on('opponent_forced_restart', () => {
+    softReset();
+    updateStatus("Opponent restarted the board! Replace your shapes.", true);
+    playSound('error'); 
+});

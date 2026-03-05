@@ -66,6 +66,10 @@ io.on('connection', (socket) => {
         socket.to(data.roomCode).emit('opponent_moved', data);
     });
 
+    socket.on('force_restart', (roomCode) => {
+        socket.to(roomCode).emit('opponent_forced_restart');
+    });
+
     socket.on('send_chat', (data) => {
       
         socket.to(data.roomCode).emit('receive_chat', data.message);
