@@ -90,6 +90,10 @@ const abortBtn = document.getElementById('abort-btn');
 const newRandomBtn = document.getElementById('new-random-btn');
 
 function handleModeChange() {
+    if (overlay.style.display === 'flex') {
+        cancelOnline();
+    }
+
     let mode = modeSelect.value;
     shapeSelect.style.display = (mode === 'pve') ? 'inline-block' : 'none';
     inviteContainer.style.display = (mode === 'invite') ? 'block' : 'none';
@@ -99,7 +103,6 @@ function handleModeChange() {
     document.getElementById('link-copied-msg').style.display = 'none';
     updateScoreboardUI();
 }
-
 function copyInviteLink() {
     initAudio(); 
     let selectedTime = parseInt(timeSelect.value); 
@@ -203,8 +206,6 @@ socket.on('start_game', (data) => {
     isOnlineGame = true;
     myRoomCode = data.roomCode;
     myOnlineRole = data.role; 
-    chatContainer.style.display = 'flex';
-    chatMessages.innerHTML = '<div style="text-align:center; color:#888; font-size:0.8rem; margin-top:5px;">Chat connected! Say hi.</div>';
     
     timeSelect.value = data.time.toString();
     timeLeft = data.time;
@@ -212,6 +213,8 @@ socket.on('start_game', (data) => {
     
     modeSelect.disabled = true; shapeSelect.disabled = true; timeSelect.disabled = true;
     
+    actionBtn.style.display = 'block'; 
+
     startSetupPhase(true); 
     
     let shapeName = myOnlineRole === 1 ? "Triangle (Red)" : "Square (Blue)";
