@@ -81,6 +81,10 @@ const shapeSelect = document.getElementById('shape-select');
 const inviteContainer = document.getElementById('invite-container');
 const overlay = document.getElementById('online-overlay');
 const overlayText = document.getElementById('overlay-text');
+const chatContainer = document.getElementById('chat-container');
+const chatMessages = document.getElementById('chat-messages');
+const chatInput = document.getElementById('chat-input');
+const chatSendBtn = document.getElementById('chat-send-btn');
 
 function handleModeChange() {
     let mode = modeSelect.value;
@@ -161,6 +165,18 @@ function handleActionBtn() {
     let mode = modeSelect.value;
     let selectedTime = parseInt(timeSelect.value); 
     
+if (gamePhase === 'OVER' && isOnlineGame) {
+        actionBtn.innerText = "Waiting for opponent...";
+        actionBtn.disabled = true;
+        socket.emit('request_rematch', myRoomCode);
+        return;
+    }if (gamePhase === 'OVER' && isOnlineGame) {
+        actionBtn.innerText = "Waiting for opponent...";
+        actionBtn.disabled = true;
+        socket.emit('request_rematch', myRoomCode);
+        return;
+    }
+
     if (mode === 'online') {
         overlay.style.display = 'flex';
         overlayText.innerText = "Searching for random player...";
@@ -184,6 +200,8 @@ socket.on('start_game', (data) => {
     isOnlineGame = true;
     myRoomCode = data.roomCode;
     myOnlineRole = data.role; 
+    chatContainer.style.display = 'flex';
+    chatMessages.innerHTML = '<div style="text-align:center; color:#888; font-size:0.8rem; margin-top:5px;">Chat connected! Say hi.</div>';
     
     timeSelect.value = data.time.toString();
     timeLeft = data.time;
@@ -223,6 +241,35 @@ socket.on('room_error', (msg) => {
     updateStatus(msg, true);
     cancelOnline();
     setTimeout(() => { resetGame(); }, 2000);
+});
+
+socket.on('opponent_wants_rematch', () => {
+    if (gamePhase === 'OVER') {
+        updateStatus("Opponent wants a rematch! Click button to accept.");
+    }
+});
+
+socket.on('rematch_accepted', () => {
+    stopTimer();
+    
+    board = [0,0,0, 0,0,0, 0,0,0]; 
+    selectedIndex = null; 
+    piecesDropped = { 1: 0, 2: 0 };
+    
+    myOnlineRole = (myOnlineRole === 1) ? 2 : 1;
+    
+    timeLeft = parseInt(timeSelect.value);
+    updateTimerUI();
+    
+    startSetupPhase(true); 
+    
+    let shapeName = myOnlineRole === 1 ? "Triangle (Red)" : "Square (Blue)";
+    let firstMoveMsg = myOnlineRole === 1 ? "Your turn to drop!" : "Waiting for opponent...";
+    
+    statusDiv.style.background = '#3d3d4a';
+    statusDiv.style.color = 'white';
+    statusDiv.style.borderColor = '#555';
+    updateStatus(`Rematch! You are ${shapeName}. ${firstMoveMsg}`);
 });
 
 function startSetupPhase(isOnline = false) {
@@ -530,6 +577,13 @@ function endGame(msg, color) {
     statusDiv.style.background = color;
     statusDiv.style.color = 'black';
     statusDiv.style.borderColor = color;
+
+    if (isOnlineGame) {
+        actionBtn.innerText = "🔄 Request Rematch";
+        actionBtn.disabled = false;
+        actionBtn.style.backgroundColor = '#27ae60';
+        actionBtn.style.color = 'white';
+    }
 }
 
 function resetGame() {
@@ -552,6 +606,7 @@ function resetGame() {
     timerDisplay.style.color = "#888";
     
     handleModeChange(); drawBoard(); cancelOnline();
+    chatContainer.style.display = 'none';
 }
 
 function initAudio() {
@@ -585,3 +640,36 @@ window.onclick = function(event) {
         event.target.style.display = "none";
     }
 };
+
+function sendChatMessage() {
+    const msg = chatInput.value.trim();
+    if (msg === '' || !isOnlineGame) return;
+  
+    appendChatMessage(msg, 'self');
+   
+    socket.emit('send_chat', { roomCode: myRoomCode, message: msg });
+    
+    chatInput.value = '';
+}
+
+chatSendBtn.addEventListener('click', sendChatMessage);
+chatInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendChatMessage();
+});
+
+socket.on('receive_chat', (msg) => {
+    appendChatMessage(msg, 'other');
+    if (sounds.drop) {
+        let chatSound = sounds.drop.cloneNode();
+        chatSound.volume = 0.2;
+        chatSound.play().catch(e => {});
+    }
+});
+
+function appendChatMessage(msg, sender) {
+    const div = document.createElement('div');
+    div.className = `chat-msg ${sender}`;
+    div.innerText = msg;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight; 
+}
