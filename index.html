@@ -95,9 +95,11 @@
                 </div>
             </div>
 
-            <div class="controls">
+            <div class="controls" id="game-controls">
                 <button id="action-btn" onclick="handleActionBtn()">Start Setup</button>
                 <button id="reset-btn" onclick="resetGame()">Reset</button>
+                <button id="abort-btn" onclick="abortGame()" style="display: none; background: #e74c3c; color: white;">Abort</button>
+                <button id="new-random-btn" onclick="findNewRandom()" style="display: none; background: #9b59b6; color: white;">New Match</button>
             </div>
 
             <div id="chat-container" style="display: none;">

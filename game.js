@@ -85,6 +85,9 @@ const chatContainer = document.getElementById('chat-container');
 const chatMessages = document.getElementById('chat-messages');
 const chatInput = document.getElementById('chat-input');
 const chatSendBtn = document.getElementById('chat-send-btn');
+const resetBtn = document.getElementById('reset-btn');
+const abortBtn = document.getElementById('abort-btn');
+const newRandomBtn = document.getElementById('new-random-btn');
 
 function handleModeChange() {
     let mode = modeSelect.value;
@@ -294,6 +297,9 @@ function startSetupPhase(isOnline = false) {
     }
     
     if (isVsComputer && currentPlayer === cpuShape) setTimeout(cpuDropPhase, 600);
+
+    abortBtn.style.display = 'block';
+    newRandomBtn.style.display = 'none';
 }
 
 function startPlayPhase() {
@@ -301,9 +307,16 @@ function startPlayPhase() {
     currentPlayer = 1; 
     selectedIndex = null;
     
-    actionBtn.innerText = "Game in Progress";
+    actionBtn.innerText = "Rematch";
     actionBtn.disabled = true;
     actionBtn.style.backgroundColor = '#444';
+    
+    resetBtn.disabled = true;
+    resetBtn.style.backgroundColor = '#444';
+    resetBtn.style.color = '#888';
+    
+    abortBtn.style.display = 'block';
+    abortBtn.disabled = false;
     
     timeLeft = parseInt(timeSelect.value);
     updateTimerUI();
@@ -584,7 +597,24 @@ function endGame(msg, color) {
         actionBtn.style.backgroundColor = '#27ae60';
         actionBtn.style.color = 'white';
     }
-}
+
+    resetBtn.disabled = false;
+    resetBtn.style.backgroundColor = '#ffa502';
+    resetBtn.style.color = 'black';
+    
+    abortBtn.style.display = 'none'; 
+
+    if (isOnlineGame) {
+        actionBtn.innerText = "🔄 Request Rematch";
+        actionBtn.disabled = false;
+        actionBtn.style.backgroundColor = '#27ae60';
+        actionBtn.style.color = 'white';
+        
+        if (modeSelect.value === 'online') {
+            newRandomBtn.style.display = 'block';
+        }
+    }
+    }
 
 function resetGame() {
     stopTimer(); board = [0,0,0,0,0,0,0,0,0]; gamePhase = 'INIT';
@@ -607,6 +637,12 @@ function resetGame() {
     
     handleModeChange(); drawBoard(); cancelOnline();
     chatContainer.style.display = 'none';
+    resetBtn.disabled = false;
+    resetBtn.style.backgroundColor = '#ffa502';
+    resetBtn.style.color = 'black';
+    
+    abortBtn.style.display = 'none';
+    newRandomBtn.style.display = 'none';
 }
 
 function initAudio() {
@@ -672,4 +708,17 @@ function appendChatMessage(msg, sender) {
     div.innerText = msg;
     chatMessages.appendChild(div);
     chatMessages.scrollTop = chatMessages.scrollHeight; 
+}
+
+function abortGame() {
+    if (confirm("Are you sure you want to abort the match? Your opponent will win.")) {
+        if (isOnlineGame) socket.emit('leave_room', myRoomCode);
+        resetGame();
+    }
+}
+
+function findNewRandom() {
+    if (isOnlineGame) socket.emit('leave_room', myRoomCode);
+    resetGame();
+    setTimeout(() => { handleActionBtn(); }, 300); 
 }

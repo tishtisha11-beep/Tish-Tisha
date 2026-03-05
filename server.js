@@ -85,6 +85,15 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('leave_room', (roomCode) => {
+        socket.leave(roomCode);
+        socket.to(roomCode).emit('opponent_disconnected');
+        if (rooms[roomCode]) {
+            rooms[roomCode].players = rooms[roomCode].players.filter(id => id !== socket.id);
+            if(rooms[roomCode].players.length === 0) delete rooms[roomCode];
+        }
+    });
+
     socket.on('disconnect', () => {
         console.log('Player disconnected:', socket.id);
         if (waitingPlayer === socket) waitingPlayer = null;
