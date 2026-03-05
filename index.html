@@ -98,7 +98,7 @@
             <div class="controls" id="game-controls">
                 <button id="action-btn" onclick="handleActionBtn()">Start Setup</button>
                 <button id="reset-btn" onclick="handleResetClick()">Reset Board</button>
-                <button id="abort-btn" onclick="abortGame()" style="display: none; background: #e74c3c; color: white;">Leave Room</button>
+                <button id="abort-btn" onclick="abortGame()" style="display: none; background: #e74c3c; color: white;">Leave</button>
                 <button id="new-random-btn" onclick="findNewRandom()" style="display: none; background: #9b59b6; color: white;">New Match</button>
             </div>
 
@@ -279,57 +279,6 @@
                                      <button onclick="window.logout()" style="padding: 5px 10px; background: #444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Logout</button>`;
             }
         };
-
-       
-        onAuthStateChanged(auth, async (user) => {
-            const authDiv = document.getElementById('auth-section');
-            if (user) {
-                authDiv.innerHTML = `<span style="color: #2ecc71; font-weight: bold; margin-right: 15px;">👤 Loading...</span>`;
-                
-                const userRef = doc(db, 'users', user.uid);
-                const docSnap = await getDoc(userRef);
-                
-                if (!docSnap.exists()) {
-                    
-                    pendingUser = user;
-                    document.getElementById('username-modal').style.display = 'flex';
-                    document.getElementById('username-input').focus();
-                    authDiv.innerHTML = `<span style="color: #f1c40f; font-weight: bold; margin-right: 15px;">⚠️ Needs Name</span>`;
-                } else {
-                    
-                    currentUser = user;
-                    let displayName = docSnap.data().name;
-                    authDiv.innerHTML = `<span style="color: #2ecc71; font-weight: bold; margin-right: 15px;">👤 ${displayName}</span> 
-                                         <button onclick="window.logout()" style="padding: 5px 10px; background: #444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Logout</button>`;
-                }
-            } else {
-                currentUser = null;
-                authDiv.innerHTML = `<button onclick="window.loginWithGoogle()" style="padding: 8px 15px; background: #ea4335; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Sign In</button>`;
-            }
-        });
-
-        
-        window.submitUsername = async () => {
-            const inputField = document.getElementById('username-input');
-            let finalName = inputField.value.trim();
-            
-            if (finalName === "") finalName = "Anonymous";
-            finalName = finalName.substring(0, 15);
-            
-            if (pendingUser) {
-                const userRef = doc(db, 'users', pendingUser.uid);
-                await setDoc(userRef, { name: finalName, wins: 0 }); 
-                
-                currentUser = pendingUser;
-                pendingUser = null;
-                document.getElementById('username-modal').style.display = 'none'; 
-               
-                const authDiv = document.getElementById('auth-section');
-                authDiv.innerHTML = `<span style="color: #2ecc71; font-weight: bold; margin-right: 15px;">👤 ${finalName}</span> 
-                                     <button onclick="window.logout()" style="padding: 5px 10px; background: #444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Logout</button>`;
-            }
-        };
-        
 
         window.loginWithGoogle = () => signInWithPopup(auth, provider).catch(e => console.error(e));
         window.logout = () => signOut(auth);

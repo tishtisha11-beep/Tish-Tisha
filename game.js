@@ -219,7 +219,7 @@ socket.on('start_game', (data) => {
     document.getElementById('score-title').innerText = "Vs " + oppName;
     
     chatContainer.style.display = 'flex';
-    chatMessages.innerHTML = `<div style="text-align:center; color:#888; font-size:0.8rem; margin-top:5px;">Chat connected with ${oppName}!</div>`;
+    chatMessages.innerHTML = `<div style="text-align:center; color:#888; font-size:0.8rem; margin-top:5px;">Chat connected with ${oppName}</div>`;
     
 
     timeSelect.value = data.time.toString();
@@ -262,12 +262,6 @@ socket.on('room_error', (msg) => {
     updateStatus(msg, true);
     cancelOnline();
     setTimeout(() => { resetGame(); }, 2000);
-});
-
-socket.on('opponent_wants_rematch', () => {
-    if (gamePhase === 'OVER') {
-        updateStatus("Opponent wants a rematch! Click button to accept.");
-    }
 });
 
 socket.on('opponent_wants_rematch', () => {
