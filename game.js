@@ -93,7 +93,10 @@ function handleModeChange() {
     if (overlay.style.display === 'flex') {
         cancelOnline();
     }
-
+    if (gamePhase !== 'INIT') {
+        resetGame();
+        return; 
+    }
     let mode = modeSelect.value;
     shapeSelect.style.display = (mode === 'pve') ? 'inline-block' : 'none';
     inviteContainer.style.display = (mode === 'invite') ? 'block' : 'none';
@@ -689,10 +692,16 @@ let audioCtx;
 document.body.addEventListener('click', initAudio, { once: true });
 
 handleModeChange();
+shapeSelect.addEventListener('change', () => {
+    if (gamePhase !== 'INIT') resetGame();
+});
+
 timeSelect.addEventListener('change', () => {
      let val = parseInt(timeSelect.value);
      let m = Math.floor(val / 60); let s = val % 60;
      timerDisplay.innerText = (m < 10 ? "0"+m : m) + ":" + (s < 10 ? "0"+s : s);
+     
+     if (gamePhase !== 'INIT') resetGame();
 });
 
 let initialTimeVal = parseInt(timeSelect.value);
