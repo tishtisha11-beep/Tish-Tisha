@@ -188,14 +188,23 @@
         </div>
     </div>
 
-    <div id="username-modal" class="modal-overlay">
+   <div id="username-modal" class="modal-overlay">
         <div class="modal-box" style="text-align: center; border-color: #2ecc71;">
             <h2 style="color: #2ecc71; border-bottom: none;">Welcome</h2>
             <p>Choose a name for the Global Leaderboard:</p>
             <input type="text" id="username-input" maxlength="15" placeholder="Enter name (max 15 chars)" 
-                   style="width: 80%; padding: 12px; margin: 20px 0; border-radius: 8px; border: 2px solid #3498db; background: #1e1e24; color: white; font-size: 1.2rem; text-align: center; outline: none;">
-            <br>
-            <button onclick="submitUsername()" style="padding: 12px 30px; background-color: #2ecc71; color: black; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1.1rem; text-transform: uppercase;">Save Name</button>
+                   style="width: 80%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 2px solid #3498db; background: #1e1e24; color: white; font-size: 1.2rem; text-align: center; outline: none;">
+            
+            <p style="margin-top: 15px; margin-bottom: 10px; color: #aaa; font-size: 0.9rem;">Choose an Avatar (Optional):</p>
+            <div id="avatar-picker" style="display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                <img src="https://api.dicebear.com/9.x/bottts/svg?seed=Tish1" class="avatar-option" onclick="window.selectAvatar(this)" style="width: 45px; height: 45px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; background: #222; transition: all 0.2s;">
+                <img src="https://api.dicebear.com/9.x/bottts/svg?seed=Tish2" class="avatar-option" onclick="window.selectAvatar(this)" style="width: 45px; height: 45px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; background: #222; transition: all 0.2s;">
+                <img src="https://api.dicebear.com/9.x/bottts/svg?seed=Tish3" class="avatar-option" onclick="window.selectAvatar(this)" style="width: 45px; height: 45px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; background: #222; transition: all 0.2s;">
+                <img src="https://api.dicebear.com/9.x/bottts/svg?seed=Tish4" class="avatar-option" onclick="window.selectAvatar(this)" style="width: 45px; height: 45px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; background: #222; transition: all 0.2s;">
+                <img src="https://api.dicebear.com/9.x/bottts/svg?seed=Tish5" class="avatar-option" onclick="window.selectAvatar(this)" style="width: 45px; height: 45px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; background: #222; transition: all 0.2s;">
+            </div>
+
+            <button onclick="submitUsername()" style="padding: 12px 30px; background-color: #2ecc71; color: black; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1.1rem; text-transform: uppercase;">Save Profile</button>
         </div>
     </div>
 
@@ -227,18 +236,20 @@
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
 
-        let currentUser = null;
+       let currentUser = null;
         let pendingUser = null; 
         window.myPlayerName = "Random"; 
        
         onAuthStateChanged(auth, async (user) => {
             const authDiv = document.getElementById('auth-section');
             if (user) {
-                authDiv.innerHTML = `<span style="color: #2ecc71; font-weight: bold; margin-right: 15px;">👤 Loading...</span>`;
+                authDiv.innerHTML = `<span style="color: #2ecc71; font-weight: bold; margin-right: 15px;">⏳ Loading...</span>`;
                 
                 const userRef = doc(db, 'users', user.uid);
                 const docSnap = await getDoc(userRef);
                 
+                let userPhoto = user.photoURL || `https://api.dicebear.com/9.x/bottts/svg?seed=${user.uid}`;
+
                 if (!docSnap.exists()) {
                     pendingUser = user;
                     document.getElementById('username-modal').style.display = 'flex';
@@ -249,8 +260,12 @@
                     let displayName = docSnap.data().name;
                     window.myPlayerName = displayName; 
                     
-                    authDiv.innerHTML = `<span style="color: #2ecc71; font-weight: bold; margin-right: 15px;">👤 ${displayName}</span> 
-                                         <button onclick="window.logout()" style="padding: 5px 10px; background: #444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Logout</button>`;
+                    authDiv.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <img src="${userPhoto}" style="width: 28px; height: 28px; border-radius: 50%; border: 2px solid #2ecc71; background: #222;">
+                            <span style="color: #2ecc71; font-weight: bold;">${displayName}</span> 
+                            <button onclick="window.logout()" style="padding: 5px 10px; background: #444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Logout</button>
+                        </div>`;
                 }
             } else {
                 currentUser = null;
@@ -259,45 +274,62 @@
             }
         });
 
+        window.chosenAvatar = null;
+        window.selectAvatar = (imgElement) => {
+            document.querySelectorAll('.avatar-option').forEach(img => {
+                img.style.borderColor = 'transparent';
+                img.style.transform = 'scale(1)';
+            });
+            imgElement.style.borderColor = '#3498db';
+            imgElement.style.transform = 'scale(1.1)';
+            window.chosenAvatar = imgElement.src;
+        };
+
         window.submitUsername = async () => {
             const inputField = document.getElementById('username-input');
             let finalName = inputField.value.trim();
+            
             if (finalName === "") {
                 alert("You must enter a username to play online!");
                 return;
             }
-            const badWords = [ "nazi", "niggeer", "nigga", "n1gga", "hate", "shit", "sh1t", "fuck", "fck", "f@ck", 
-                "ass", "a$$", "israel", "holocaust", "holocust", "hitler", "negro", "kill", "killer", 
-                "kill yourself", "killyourself", "kys", "dick", "cock", "dih", "pussy", "bitch", 
-                "b1tch", "bastard", "porn", "cp", "cunt", "faggot", "fag", "slut", "stupid", "idiot", 
-                "motherfucker", "whore", "retard", "twat", "wanker", "dumbass", "bullshit", "dyke", 
-                "tranny", "rape", "pedo", "pedophile", "incest", "tits", "vagina", "penis", "boob", 
-                "suicide", "hang yourself", "die"]; 
+
+            const badWords = ["nazi", "niggeer", "nigga", "n1gga", "hate", "shit", "sh1t", "fuck", "fck", "f@ck", "ass", "a$$", "israel", "holocaust", "holocust", "hitler", "negro", "kill", "killer", "kill yourself", "killyourself", "kys", "dick", "cock", "dih", "pussy", "bitch", "b1tch", "bastard", "porn", "cp", "cunt", "faggot", "fag", "slut", "stupid", "idiot", "motherfucker", "whore", "retard", "twat", "wanker", "dumbass", "bullshit", "dyke", "tranny", "rape", "pedo", "pedophile", "incest", "tits", "vagina", "penis", "boob", "suicide", "hang yourself", "die"]; 
             let hasBadWord = false;
             badWords.forEach(word => {
-                if (finalName.toLowerCase().includes(word.toLowerCase())) hasBadWord = true;
+                const regex = new RegExp("\\b" + word + "\\b", "gi"); 
+                if (finalName.match(regex)) hasBadWord = true;
             });
 
             if (hasBadWord) {
                 alert("Please choose a more appropriate name.");
                 return;
             }
+
             finalName = finalName.substring(0, 15);
             
             if (pendingUser) {
                 const userRef = doc(db, 'users', pendingUser.uid);
-                await setDoc(userRef, { name: finalName, wins: 0 }); 
+                
+                let finalPhoto = window.chosenAvatar || pendingUser.photoURL || `https://api.dicebear.com/9.x/bottts/svg?seed=${finalName}`;
+                
+                await setDoc(userRef, { name: finalName, wins: 0, photoURL: finalPhoto }); 
+                
                 currentUser = pendingUser;
                 pendingUser = null;
                 document.getElementById('username-modal').style.display = 'none'; 
-                
                 window.myPlayerName = finalName; 
                 
                 const authDiv = document.getElementById('auth-section');
-                authDiv.innerHTML = `<span style="color: #2ecc71; font-weight: bold; margin-right: 15px;">👤 ${finalName}</span> 
-                                     <button onclick="window.logout()" style="padding: 5px 10px; background: #444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Logout</button>`;
+                authDiv.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <img src="${finalPhoto}" style="width: 28px; height: 28px; border-radius: 50%; border: 2px solid #2ecc71; background: #222;">
+                            <span style="color: #2ecc71; font-weight: bold;">${finalName}</span> 
+                            <button onclick="window.logout()" style="padding: 5px 10px; background: #444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Logout</button>
+                        </div>`;
             }
         };
+
         window.loginWithGoogle = () => signInWithPopup(auth, provider).catch(e => console.error(e));
         window.logout = () => signOut(auth);
 
@@ -319,9 +351,20 @@
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
                     let trophy = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '🏅';
-                    list.innerHTML += `<div style="display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #444; font-size: 1.1rem;">
-                        <span><b>${rank}.</b> ${data.name}</span>
-                        <span style="color: gold; font-weight: bold;">${trophy} ${data.wins} Wins</span>
+                    
+                    let playerPfp = data.photoURL || `https://api.dicebear.com/9.x/bottts/svg?seed=${data.name}`;
+
+                    list.innerHTML += `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #444; font-size: 1.1rem;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span style="color: #888; font-weight: bold; width: 20px;">${rank}.</span>
+                            <img src="${playerPfp}" style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #3498db; background: #222;">
+                            <span style="font-weight: 500;">${data.name}</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <span style="color: gold; font-weight: bold;">${trophy} ${data.wins}</span>
+                            <button onclick="window.reportPlayer('${data.name}')" style="background: transparent; border: none; cursor: pointer; font-size: 1.2rem; padding: 0; transition: transform 0.2s;" title="Report Player" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">🚩</button>
+                        </div>
                     </div>`;
                     rank++;
                 });
