@@ -112,7 +112,7 @@ function copyInviteLink() {
     
     navigator.clipboard.writeText(link).then(() => {
         overlay.style.display = 'flex';
-        overlayText.innerText = "Link copied! Waiting for friend to join...";
+        overlayText.innerText = "Link copied, Waiting for friend to join...";
         
         socket.emit('create_room', { roomCode: myRoomCode, time: selectedTime, playerName: window.myPlayerName });
     }).catch(() => {
@@ -241,8 +241,8 @@ socket.on('start_game', (data) => {
     startSetupPhase(true); 
     
     let shapeName = myOnlineRole === 1 ? "Triangle (Red)" : "Square (Blue)";
-    let firstMoveMsg = myOnlineRole === 1 ? "Your turn to drop!" : "Waiting for opponent...";
-    updateStatus(`Game Found! You are ${shapeName}. ${firstMoveMsg}`);
+    let firstMoveMsg = myOnlineRole === 1 ? "Your turn to drop." : "Waiting for opponent...";
+    updateStatus(`Game Found, You are ${shapeName}. ${firstMoveMsg}`);
     playSound('win');
 });
 
@@ -260,7 +260,7 @@ socket.on('opponent_moved', (data) => {
 
 socket.on('opponent_disconnected', () => {
     appendChatMessage("Opponent left the room.", 'system');
-    updateStatus("Opponent Disconnected! You win.", true);
+    updateStatus("Opponent Disconnected, You win.", true);
     playSound('win');
     setTimeout(() => {
         resetGame();
@@ -275,7 +275,7 @@ socket.on('room_error', (msg) => {
 
 socket.on('opponent_wants_rematch', () => {
     if (gamePhase === 'OVER') {
-        updateStatus("Opponent wants a rematch! Click Accept to agree.");
+        updateStatus("Opponent wants a rematch, Click Accept to agree.");
         actionBtn.innerText = "✅ Accept Rematch";
         actionBtn.style.backgroundColor = '#f1c40f';
         actionBtn.style.color = 'black';
@@ -295,12 +295,12 @@ socket.on('rematch_accepted', () => {
     
     startSetupPhase(true); 
     let shapeName = myOnlineRole === 1 ? "Triangle (Red)" : "Square (Blue)";
-    let firstMoveMsg = myOnlineRole === 1 ? "Your turn to drop!" : "Waiting for opponent...";
+    let firstMoveMsg = myOnlineRole === 1 ? "Your turn to drop" : "Waiting for opponent...";
     
     statusDiv.style.background = '#3d3d4a';
     statusDiv.style.color = 'white';
     statusDiv.style.borderColor = '#555';
-    updateStatus(`Rematch! You are ${shapeName}. ${firstMoveMsg}`);
+    updateStatus(`Rematch, You are ${shapeName}. ${firstMoveMsg}`);
 });
 
 function startSetupPhase(isOnline = false) {
@@ -320,7 +320,7 @@ function startSetupPhase(isOnline = false) {
         timeSelect.disabled = true;
     }
     
-    actionBtn.innerText = isOnlineGame ? "Online Match Active" : "Setup in Progress...";
+    actionBtn.innerText = isOnlineGame ? "Match Active" : "Setup in Progress...";
     actionBtn.disabled = true;
     actionBtn.style.backgroundColor = '#444';
     actionBtn.style.color = '#888';
@@ -356,9 +356,9 @@ function startPlayPhase() {
     startTimer();
     
     if (isOnlineGame) {
-        updateStatus(myOnlineRole === 1 ? "Your turn! Time is ticking." : "Waiting for opponent...");
+        updateStatus(myOnlineRole === 1 ? "Your turn, Time is ticking." : "Waiting for opponent...");
     } else {
-        updateStatus(`Game Started! Timer Running.`);
+        updateStatus(`Game Started, Timer Running.`);
     }
 
     if (isVsComputer && currentPlayer === cpuShape) setTimeout(cpuMovePhase, 800);
@@ -378,7 +378,7 @@ function handleTap(index) {
         if (checkWin(currentPlayer)) {
             board[index] = 0; 
             playSound('error'); hapticVibrate(50);
-            updateStatus("Illegal! Cannot form a line during setup.", true);
+            updateStatus("Illegal, Cannot form a line during setup.", true);
             return;
         }
 
@@ -402,7 +402,7 @@ function handleTap(index) {
                 executeSlideAnimation(selectedIndex, index, true);
             } else {
                 playSound('error'); hapticVibrate(50);
-                updateStatus("Must move Up, Down, Left, or Right!", true);
+                updateStatus("Must move Up, Down, Left, or Right", true);
             }
         }
     }
@@ -467,7 +467,7 @@ function finishMoveLogic(playerWhoMoved) {
     currentPlayer = (playerWhoMoved === 1) ? 2 : 1;
     if (!hasLegalMoves(currentPlayer)) {
         stopTimer(); playSound('error'); hapticVibrate([200, 100, 200]);
-        endGame("DRAW! No moves left.", 'orange'); return;
+        endGame("DRAW, No moves left.", 'orange'); return;
     }
     
     let msg = `${getPlayerName()}'s turn`;
@@ -549,9 +549,9 @@ function hasLegalMoves(player) {
 }
 
 function getWinMessage(winningShape) {
-    if (isOnlineGame) return winningShape === myOnlineRole ? "YOU WIN ONLINE!" : "OPPONENT WINS!";
-    if (isVsComputer) return winningShape === humanShape ? "YOU WIN!" : "COMPUTER WON!";
-    return winningShape === 1 ? "TRIANGLE WINS!" : "SQUARE WINS!";
+    if (isOnlineGame) return winningShape === myOnlineRole ? "YOU WIN ONLINE" : "OPPONENT WINS";
+    if (isVsComputer) return winningShape === humanShape ? "YOU WIN" : "COMPUTER WON";
+    return winningShape === 1 ? "TRIANGLE WINS" : "SQUARE WINS";
 }
 
 function handleWinAudioVisual(winningShape) {
@@ -740,8 +740,11 @@ socket.on('opponent_forced_restart', () => {
 });
 
 window.reportPlayer = function(offenderName) {
-    if (confirm(`Do you want to report ${offenderName} for an inappropriate picture?`)) {
-        alert(`Thank you. ${offenderName}'s picture has been reported to the administration and will be reviewed.`);
+    if (confirm(`Do you want to report ${offenderName} for an inappropriate picture or offensive chat?`)) {
+        if (window.sendReportToDatabase) {
+            window.sendReportToDatabase(offenderName);
+        }
+        alert(`Thank you. ${offenderName} has been reported to the government of tribonastan and will be nuked.`);
     }
 };
 
@@ -790,7 +793,7 @@ window.toggleChat = function(enabled, isInit = false) {
         if (!isInit) appendChatMessage("You disabled the chat.", 'system');
     } else {
         chatInput.disabled = false;
-        chatInput.placeholder = "Type a message... (Report bad PFPs above)";
+        chatInput.placeholder = "Type a message...";
         chatSendBtn.disabled = false;
         chatInput.style.opacity = '1';
         if (!isInit) appendChatMessage("You enabled the chat.", 'system');
