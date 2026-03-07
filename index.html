@@ -246,18 +246,19 @@
         window.myPlayerName = "Random"; 
         window.myPlayerPfp = "https://api.dicebear.com/9.x/bottts/svg?seed=Random"; 
         window.uploadedPfp = null; 
-        window.sendReportToDatabase = async (offenderName) => {
+        window.sendReportToDatabase = async (offenderName, chatLog) => {
             try {
                 const newReportRef = doc(collection(db, "reports"));
                 await setDoc(newReportRef, { 
                     reportedPlayer: offenderName, 
                     reportedBy: window.myPlayerName || "Unknown", 
-                    timestamp: new Date().toISOString() 
+                    timestamp: new Date().toISOString(),
+                    chatContext: chatLog || "No chat recorded." 
                 });
             } catch(e) { 
                 console.error("Report failed to send", e); 
             }
-            };
+        };
 
         window.viewPfp = (url) => {
             document.getElementById('pfp-large-view').src = url;

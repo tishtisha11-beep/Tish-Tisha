@@ -244,6 +244,7 @@ socket.on('start_game', (data) => {
     let firstMoveMsg = myOnlineRole === 1 ? "Your turn to drop." : "Waiting for opponent...";
     updateStatus(`Game Found, You are ${shapeName}. ${firstMoveMsg}`);
     playSound('win');
+    window.localChatHistory = [];
 });
 
 socket.on('opponent_moved', (data) => {
@@ -742,7 +743,7 @@ socket.on('opponent_forced_restart', () => {
 window.reportPlayer = function(offenderName) {
     if (confirm(`Do you want to report ${offenderName} for an inappropriate picture or offensive chat?`)) {
         if (window.sendReportToDatabase) {
-            window.sendReportToDatabase(offenderName);
+            window.sendReportToDatabase(offenderName, window.localChatHistory || []);
         }
         alert(`Thank you. ${offenderName} has been reported to the government of tribonastan and will be nuked.`);
     }
@@ -848,6 +849,8 @@ socket.on('receive_chat', (data) => {
 });
 
 function appendChatMessage(msg, sender, pfpUrl = "https://api.dicebear.com/9.x/bottts/svg?seed=System") {
+    if (typeof window.localChatHistory === 'undefined') window.localChatHistory = [];
+    if (sender !== 'system') window.localChatHistory.push(`${sender === 'self' ? 'Reporter' : 'Reported Player'}: ${msg}`);
     const wrapper = document.createElement('div');
     wrapper.style.display = 'flex';
     wrapper.style.alignItems = 'flex-end';
