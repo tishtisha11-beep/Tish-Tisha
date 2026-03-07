@@ -181,13 +181,18 @@ function handleActionBtn() {
     }
 
     if (mode === 'online') {
+        if (window.myPlayerUID === "Unknown") {
+            alert("⚠️ You must Sign In with Google (top left) to play Online Random matches!");
+            return;
+        }
+
         overlay.style.display = 'flex';
         overlayText.innerText = "Searching for random player...";
         
         socket.emit('find_random_match', { timePreference: selectedTime, playerName: window.myPlayerName, uid: window.myPlayerUID }); 
         
         return;
-    } 
+    }
 
     if (gamePhase === 'INIT') startSetupPhase(false);
     else if (gamePhase === 'READY') startPlayPhase();
@@ -210,7 +215,7 @@ socket.on('start_game', (data) => {
     myOnlineRole = data.role; 
     
     let oppName = data.opponentName || "Random";
-    window.opponentUID = data.opponentUid || "Unknown"; // Save their UID locally!
+    window.opponentUID = data.opponentUid || "Unknown";
     document.getElementById('score-title').innerText = "Vs " + oppName;
     
     chatContainer.style.display = 'flex';
