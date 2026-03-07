@@ -60,7 +60,7 @@
 
             <div id="invite-container">
                 <button class="link-btn" onclick="copyInviteLink()">🔗 Copy Invite Link</button>
-                <div id="link-copied-msg" style="color: #2ecc71; font-size: 0.8rem; display: none; margin-top: 5px;">Link copied to clipboard! Send to a friend.</div>
+                <div id="link-copied-msg" style="color: #2ecc71; font-size: 0.8rem; display: none; margin-top: 5px;">Link copied to clipboard. Send to a friend.</div>
             </div>
 
             <div id="timer-display">01:00</div>
@@ -117,7 +117,7 @@
             <div class="rule-item"><span class="icon">2.</span><span><b>Start:</b> Once 6 pieces are down, click "Start Game" to lock the board and start the clock.</span></div>
             <div class="rule-item"><span class="icon">3.</span><span><b>Move:</b> Slide pieces Up, Down, Left, or Right. <b>(No Diagonals)</b></span></div>
             <div class="rule-item"><span class="icon">*</span><span><b>Pro Tip:</b> Never gamble, the house always win and you will lose everything (More about the game below)</span></div>
-            <div class="rule-item"><span class="icon">*</span><span><b>Useful advice</b> If you see someone with an inappropriate profile picture or being toxic in the chat, use the red REPORT button in the Chat or the flag button on the Leaderboard to nuke them (flag them).</span></div>
+            <div class="rule-item"><span class="icon">🚩</span><span><b>Report:</b> If you see someone with an inappropriate profile picture or being toxic in the chat, use the red REPORT button in the Chat Header or the flag button on the Leaderboard to nuke them (flag them).</span></div>
         </div>
     </div>
 
@@ -127,7 +127,7 @@
         
         <h3>How to Play</h3>
         <p><strong>Phase 1: The Setup</strong><br>Easily start by placing your three pieces. Each player (Triangle vs. Square) takes turns placing <strong>3 pieces</strong> on the board. You cannot win during the setup phase; you must plan ahead for the movement phase.</p>
-        <p><strong>Phase 2: The Movement</strong><br>Once all 6 pieces are on the board, you slide pieces to adjacent <strong>empty squares</strong> beside your piece. You can only move <strong>Up, Down, Left, or Right</strong>. Diagonal moves are NOT allowed in this version!</p>
+        <p><strong>Phase 2: The Movement</strong><br>Once all 6 pieces are on the board, you slide pieces to adjacent <strong>empty squares</strong> beside your piece. You can only move <strong>Up, Down, Left, or Right</strong>. Diagonal moves are NOT allowed in this version.</p>
         <p><strong>How to Win</strong><br>To win, you have to align the pieces horizontally or vertically only. Aligning them diagonally won't count as a win. The "Sudden Death" timer rule applies: if no one wins before the end of time, the last one to move before the clock ends wins. So it’s either you win before the timer ends, or you be the last one to move.</p>
         <p><strong>Draws & Modes</strong><br>If one of the players is stuck and can't move, then it’s automatically a draw. It’s a very simple game that anyone can play with just an internet connection. If you don't want to play against humans, you can play against the computer.</p>
 
@@ -367,7 +367,7 @@
             let finalName = inputField.value.trim();
             
             if (finalName === "") {
-                alert("You must enter a username to play online!");
+                alert("You must enter a username to play online.");
                 return;
             }
 
@@ -447,7 +447,7 @@
                     </div>`;
                     rank++;
                 });
-                if (list.innerHTML === "") list.innerHTML = "<p style='text-align: center;'>No scores yet. Be the first to win!</p>";
+                if (list.innerHTML === "") list.innerHTML = "<p style='text-align: center;'>No scores yet. Be the first to win.</p>";
             } catch(e) {
                 list.innerHTML = "<p style='text-align: center; color: #ff4757;'>Error loading leaderboard. Database might be locked.</p>";
                 console.error(e);

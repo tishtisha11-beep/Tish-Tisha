@@ -9,7 +9,7 @@ const io = new Server(server);
 app.use(express.static(__dirname));
 
 const rooms = {}; 
-let waitingPlayer = null; 
+const waitingPlayers = {}; 
 
 io.on('connection', (socket) => {
     console.log('A player connected:', socket.id);
@@ -40,34 +40,39 @@ io.on('connection', (socket) => {
     });
 
     socket.on('find_random_match', (data) => {
-        if (waitingPlayer && waitingPlayer !== socket) {
+        const timePref = data.timePreference.toString();
+        if (waitingPlayers[timePref] && waitingPlayers[timePref] !== socket) {
+            const opponent = waitingPlayers[timePref];
             const roomCode = 'MATCH_' + Math.random().toString(36).substring(2, 8);
+            
             socket.join(roomCode);
-            waitingPlayer.join(roomCode);
-            rooms[roomCode] = { players: [waitingPlayer.id, socket.id] };
+            opponent.join(roomCode);
+            rooms[roomCode] = { players: [opponent.id, socket.id] };
 
-            const gameTime = waitingPlayer.timePreference || 60;
-            const p1Name = waitingPlayer.playerName;
-            const p1Uid = waitingPlayer.uid;
+            const gameTime = opponent.timePreference || parseInt(timePref);
+            const p1Name = opponent.playerName;
+            const p1Uid = opponent.uid;
             const p2Name = data.playerName;
             const p2Uid = data.uid;
 
-            waitingPlayer.emit('start_game', { roomCode: roomCode, role: 1, time: gameTime, opponentName: p2Name, opponentUid: p2Uid });
+            opponent.emit('start_game', { roomCode: roomCode, role: 1, time: gameTime, opponentName: p2Name, opponentUid: p2Uid });
             socket.emit('start_game', { roomCode: roomCode, role: 2, time: gameTime, opponentName: p1Name, opponentUid: p1Uid });
             
-            waitingPlayer = null; 
+            delete waitingPlayers[timePref]; 
         } else {
             socket.timePreference = data.timePreference;
             socket.playerName = data.playerName; 
             socket.uid = data.uid;
-            waitingPlayer = socket;
+            waitingPlayers[timePref] = socket; 
         }
     });
 
     socket.on('cancel_search', () => {
-        if (waitingPlayer === socket) {
-            waitingPlayer = null;
-            console.log(`${socket.id} cancelled their search.`);
+        for (const time in waitingPlayers) {
+            if (waitingPlayers[time] === socket) {
+                delete waitingPlayers[time];
+                console.log(`${socket.id} cancelled their search.`);
+            }
         }
     });
 
@@ -110,7 +115,12 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         console.log('Player disconnected:', socket.id);
-        if (waitingPlayer === socket) waitingPlayer = null;
+        
+        for (const time in waitingPlayers) {
+            if (waitingPlayers[time] === socket) {
+                delete waitingPlayers[time];
+            }
+        }
         
         for (const roomCode in rooms) {
             if (rooms[roomCode].players.includes(socket.id)) {

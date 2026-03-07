@@ -99,6 +99,13 @@ function handleModeChange() {
     
     actionBtn.style.display = (mode === 'invite') ? 'none' : 'block';
     
+    // Switch the text based on mode
+    if (mode === 'online') {
+        actionBtn.innerText = "Search";
+    } else {
+        actionBtn.innerText = "Start Setup";
+    }
+    
     document.getElementById('link-copied-msg').style.display = 'none';
     updateScoreboardUI();
 }
@@ -112,7 +119,7 @@ function copyInviteLink() {
     
     navigator.clipboard.writeText(link).then(() => {
         overlay.style.display = 'flex';
-        overlayText.innerText = "Link copied, Waiting for friend to join...";
+        overlayText.innerText = "Link copied. Waiting for friend to join...";
         
         socket.emit('create_room', { roomCode: myRoomCode, time: selectedTime, playerName: window.myPlayerName, uid: window.myPlayerUID });
     }).catch(() => {
@@ -163,7 +170,6 @@ const timerDisplay = document.getElementById('timer-display');
 const timeSelect = document.getElementById('time-select');
 const cells = document.querySelectorAll('.cell');
 
-
 function handleActionBtn() {
     initAudio(); 
     let mode = modeSelect.value;
@@ -182,7 +188,7 @@ function handleActionBtn() {
 
     if (mode === 'online') {
         if (window.myPlayerUID === "Unknown") {
-            alert("⚠️ You must Sign In with Google (top left) to play Online Random matches!");
+            alert("You must Sign In with Google to play Online Random matches.");
             return;
         }
 
@@ -248,7 +254,7 @@ socket.on('start_game', (data) => {
     
     let shapeName = myOnlineRole === 1 ? "Triangle (Red)" : "Square (Blue)";
     let firstMoveMsg = myOnlineRole === 1 ? "Your turn to drop." : "Waiting for opponent...";
-    updateStatus(`Game Found, You are ${shapeName}. ${firstMoveMsg}`);
+    updateStatus(`Game Found. You are ${shapeName}. ${firstMoveMsg}`);
     playSound('win');
     window.localChatHistory = [];
 });
@@ -267,7 +273,7 @@ socket.on('opponent_moved', (data) => {
 
 socket.on('opponent_disconnected', () => {
     appendChatMessage("Opponent left the room.", 'system');
-    updateStatus("Opponent Disconnected, You win.", true);
+    updateStatus("Opponent Disconnected. You win.", true);
     playSound('win');
     setTimeout(() => {
         resetGame();
@@ -282,7 +288,7 @@ socket.on('room_error', (msg) => {
 
 socket.on('opponent_wants_rematch', () => {
     if (gamePhase === 'OVER') {
-        updateStatus("Opponent wants a rematch, Click Accept to agree.");
+        updateStatus("Opponent wants a rematch. Click Accept to agree.");
         actionBtn.innerText = "✅ Accept Rematch";
         actionBtn.style.backgroundColor = '#f1c40f';
         actionBtn.style.color = 'black';
@@ -302,12 +308,12 @@ socket.on('rematch_accepted', () => {
     
     startSetupPhase(true); 
     let shapeName = myOnlineRole === 1 ? "Triangle (Red)" : "Square (Blue)";
-    let firstMoveMsg = myOnlineRole === 1 ? "Your turn to drop" : "Waiting for opponent...";
+    let firstMoveMsg = myOnlineRole === 1 ? "Your turn to drop." : "Waiting for opponent...";
     
     statusDiv.style.background = '#3d3d4a';
     statusDiv.style.color = 'white';
     statusDiv.style.borderColor = '#555';
-    updateStatus(`Rematch, You are ${shapeName}. ${firstMoveMsg}`);
+    updateStatus(`Rematch. You are ${shapeName}. ${firstMoveMsg}`);
 });
 
 function startSetupPhase(isOnline = false) {
@@ -363,9 +369,9 @@ function startPlayPhase() {
     startTimer();
     
     if (isOnlineGame) {
-        updateStatus(myOnlineRole === 1 ? "Your turn, Time is ticking." : "Waiting for opponent...");
+        updateStatus(myOnlineRole === 1 ? "Your turn. Time is ticking." : "Waiting for opponent...");
     } else {
-        updateStatus(`Game Started, Timer Running.`);
+        updateStatus(`Game Started. Timer Running.`);
     }
 
     if (isVsComputer && currentPlayer === cpuShape) setTimeout(cpuMovePhase, 800);
@@ -385,7 +391,7 @@ function handleTap(index) {
         if (checkWin(currentPlayer)) {
             board[index] = 0; 
             playSound('error'); hapticVibrate(50);
-            updateStatus("Illegal, Cannot form a line during setup.", true);
+            updateStatus("Illegal. Cannot form a line during setup.", true);
             return;
         }
 
@@ -409,7 +415,7 @@ function handleTap(index) {
                 executeSlideAnimation(selectedIndex, index, true);
             } else {
                 playSound('error'); hapticVibrate(50);
-                updateStatus("Must move Up, Down, Left, or Right", true);
+                updateStatus("Must move Up, Down, Left, or Right.", true);
             }
         }
     }
@@ -474,7 +480,7 @@ function finishMoveLogic(playerWhoMoved) {
     currentPlayer = (playerWhoMoved === 1) ? 2 : 1;
     if (!hasLegalMoves(currentPlayer)) {
         stopTimer(); playSound('error'); hapticVibrate([200, 100, 200]);
-        endGame("DRAW, No moves left.", 'orange'); return;
+        endGame("DRAW. No moves left.", 'orange'); return;
     }
     
     let msg = `${getPlayerName()}'s turn`;
@@ -534,7 +540,7 @@ function checkSetupComplete() {
             actionBtn.innerText = "Start Game"; 
             actionBtn.style.backgroundColor = '#2ed573';
             actionBtn.style.color = 'black';
-            updateStatus("Setup Complete! Click Start Game.");
+            updateStatus("Setup Complete. Click Start Game.");
         }
     } else {
         currentPlayer = (currentPlayer === 1) ? 2 : 1;
@@ -614,7 +620,7 @@ function startTimer() {
         if (timeLeft <= 0) {
             stopTimer();
             let winningShape = (currentPlayer === 1) ? 2 : 1;
-            endGame(`TIME'S UP! ${handleWinAudioVisual(winningShape)}`, 'orange');
+            endGame(`TIME'S UP. ${handleWinAudioVisual(winningShape)}`, 'orange');
         }
     }, 1000);
 }
@@ -665,7 +671,9 @@ function resetGame() {
     statusDiv.style.background = '#3d3d4a'; statusDiv.style.color = 'white'; statusDiv.style.borderColor = '#555';
     updateStatus("Choose settings & Click Start Setup");
     
-    actionBtn.innerText = "Start Setup"; actionBtn.disabled = false;
+    let mode = modeSelect.value;
+    actionBtn.innerText = (mode === 'online') ? "Search" : "Start Setup";
+    actionBtn.disabled = false;
     actionBtn.style.backgroundColor = '#3498db'; actionBtn.style.color = 'white';
 
     modeSelect.disabled = false; shapeSelect.disabled = false; timeSelect.disabled = false; 
@@ -727,12 +735,12 @@ function softReset() {
     startSetupPhase(true); 
     
     let shapeName = myOnlineRole === 1 ? "Triangle (Red)" : "Square (Blue)";
-    let firstMoveMsg = myOnlineRole === 1 ? "Your turn to drop!" : "Waiting for opponent...";
+    let firstMoveMsg = myOnlineRole === 1 ? "Your turn to drop." : "Waiting for opponent...";
     
     statusDiv.style.background = '#3d3d4a';
     statusDiv.style.color = 'white';
     statusDiv.style.borderColor = '#555';
-    updateStatus(`Match Restarted! You are ${shapeName}. ${firstMoveMsg}`);
+    updateStatus(`Match Restarted. You are ${shapeName}. ${firstMoveMsg}`);
     
     if (document.getElementById('reset-btn')) {
         document.getElementById('reset-btn').disabled = false;
@@ -742,7 +750,7 @@ function softReset() {
 
 socket.on('opponent_forced_restart', () => {
     softReset();
-    updateStatus("Opponent restarted the board! Replace your shapes.", true);
+    updateStatus("Opponent restarted the board. Replace your shapes.", true);
     playSound('error'); 
 });
 
