@@ -197,7 +197,7 @@
             
             <p style="margin-top: 15px; margin-bottom: 10px; color: #aaa; font-size: 0.9rem;">Upload Profile Picture (Optional):</p>
             <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 20px;">
-                <img id="pfp-preview" src="https://api.dicebear.com/9.x/bottts/svg?seed=Random" style="width: 60px; height: 60px; border-radius: 50%; border: 2px solid #3498db; object-fit: cover; background: #222;">
+                <img id="pfp-preview" src="https://api.dicebear.com/9.x/bottts/svg?seed=Random" style="width: 80px; height: 80px; border-radius: 50%; border: 2px solid #3498db; object-fit: cover; background: #222;">
                 <input type="file" id="pfp-upload" accept="image/*" style="display: none;" onchange="handlePfpUpload(event)">
                 <button onclick="document.getElementById('pfp-upload').click()" style="padding: 6px 12px; background: #444; color: white; border: 1px solid #666; border-radius: 5px; cursor: pointer; font-size: 0.8rem;">Choose Image</button>
             </div>
@@ -260,7 +260,7 @@
                 const img = new Image();
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    const MAX_SIZE = 150; 
+                    const MAX_SIZE = 400; 
                     let width = img.width;
                     let height = img.height;
 
@@ -274,7 +274,7 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
                     
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
                     window.uploadedPfp = dataUrl;
                     document.getElementById('pfp-preview').src = dataUrl; 
                 };
@@ -308,7 +308,7 @@
 
                     authDiv.innerHTML = `
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <img src="${finalLoadedPhoto}" style="width: 28px; height: 28px; border-radius: 50%; border: 2px solid #2ecc71; background: #222; object-fit: cover;">
+                            <img src="${finalLoadedPhoto}" style="width: 36px; height: 28px; border-radius: 50%; border: 2px solid #2ecc71; background: #222; object-fit: cover;">
                             <span style="color: #2ecc71; font-weight: bold;">${displayName}</span> 
                             <button onclick="window.logout()" style="padding: 5px 10px; background: #444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Logout</button>
                         </div>`;
@@ -329,7 +329,7 @@
                 return;
             }
 
-            const badWords = ["nazi", "niggeer", "nigga", "n1gga", "hate", "shit", "sh1t", "fuck", "fck", "f@ck", "ass", "a$$", "israel", "holocaust", "holocust", "hitler", "negro", "kill", "killer", "kill yourself", "killyourself", "kys", "dick", "cock", "dih", "pussy", "bitch", "b1tch", "bastard", "porn", "cp", "cunt", "faggot", "fag", "slut", "stupid", "idiot", "motherfucker", "whore", "retard", "twat", "wanker", "dumbass", "bullshit", "dyke", "tranny", "rape", "pedo", "pedophile", "incest", "tits", "vagina", "penis", "boob", "suicide", "hang yourself", "die"]; 
+            const badWords = ["nazi", "niggeer", "nigga", "nigg@", "n1gga", "hate", "shit", "sh1t", "fuck", "fck", "f@ck", "ass", "a$$", "israel", "holocaust", "holocust", "hitler", "negro", "kill", "killer", "kill yourself", "killyourself", "kys", "dick", "cock", "dih", "pussy", "bitch", "b1tch", "bastard", "porn", "cp", "cunt", "faggot", "fag", "slut", "stupid", "idiot", "motherfucker", "whore", "retard", "twat", "wanker", "dumbass", "bullshit", "dyke", "tranny", "rape", "pedo", "pedophile", "incest", "tits", "vagina", "penis", "boob", "suicide", "hang yourself", "die"]; 
             let hasBadWord = false;
             badWords.forEach(word => {
                 const regex = new RegExp("\\b" + word + "\\b", "gi"); 
@@ -394,7 +394,7 @@
                     <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #444; font-size: 1.1rem;">
                         <div style="display: flex; align-items: center; gap: 12px;">
                             <span style="color: #888; font-weight: bold; width: 20px;">${rank}.</span>
-                            <img src="${playerPfp}" onclick="window.viewPfp('${playerPfp}')" style="width: 45px; height: 45px; border-radius: 50%; border: 2px solid #3498db; background: #222; object-fit: cover; cursor: pointer;">
+                            <img src="${playerPfp}" onclick="window.viewPfp('${playerPfp}')" style="width: 55px; height: 55px; border-radius: 50%; border: 2px solid #3498db; background: #222; object-fit: cover; cursor: pointer;">
                             <span style="font-weight: 500;">${data.name}</span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 15px;">

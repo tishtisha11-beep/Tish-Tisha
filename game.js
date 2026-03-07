@@ -255,7 +255,6 @@ socket.on('opponent_moved', (data) => {
 });
 
 socket.on('opponent_disconnected', () => {
-    // Uses fallback PFP or default for disconnected user
     appendChatMessage("Opponent left the room.", 'other');
     updateStatus("Opponent Disconnected! You win.", true);
     playSound('win');
@@ -769,8 +768,8 @@ function appendChatMessage(msg, sender, pfpUrl = "https://api.dicebear.com/9.x/b
 
     const img = document.createElement('img');
     img.src = pfpUrl;
-    img.style.width = '24px';
-    img.style.height = '24px';
+    img.style.width = '34px';
+    img.style.height = '34px';
     img.style.borderRadius = '50%';
     img.style.objectFit = 'cover';
     img.style.cursor = 'pointer';
