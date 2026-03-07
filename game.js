@@ -485,10 +485,12 @@ function handleWinAudioVisual(winningShape) {
     let msg = getWinMessage(winningShape);
     
     let localPlayerWon = false;
-    if (isOnlineGame && winningShape === myOnlineRole) localPlayerWon = true;
-    if (isVsComputer && winningShape === humanShape) localPlayerWon = true;
-    if (!isOnlineGame && !isVsComputer) localPlayerWon = true; 
-
+    
+    if (modeSelect.value === 'online' && isOnlineGame && winningShape === myOnlineRole) {
+        localPlayerWon = true;
+    } else if (modeSelect.value === 'pve' && isVsComputer && winningShape === humanShape) {
+        localPlayerWon = true;
+    }
     if (localPlayerWon && window.recordWin) {
         window.recordWin();
     }
