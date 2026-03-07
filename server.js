@@ -78,6 +78,9 @@ io.on('connection', (socket) => {
     socket.on('send_chat', (data) => {
         socket.to(data.roomCode).emit('receive_chat', { message: data.message, pfp: data.pfp });
     });
+    socket.on('toggle_chat', (data) => {
+        socket.to(data.roomCode).emit('opponent_toggled_chat', data.enabled);
+    });
 
     socket.on('request_rematch', (roomCode) => {
         if (rooms[roomCode]) {

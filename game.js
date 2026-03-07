@@ -3,7 +3,6 @@ let myRoomCode = null;
 let isOnlineGame = false;
 let myOnlineRole = null;
 
-
 const canvas = document.getElementById('fireworksCanvas');
 const ctx = canvas.getContext('2d');
 let particles = [];
@@ -37,7 +36,6 @@ function animateFireworks() {
 }
 animateFireworks();
 
-
 const sounds = {
     drop: new Audio('drop.mp3'), slide: new Audio('slide.mp3'),
     error: new Audio('error.mp3'), win: new Audio('win.mp3'), boo: new Audio('boo.mp3')
@@ -51,7 +49,6 @@ function playSound(type) {
     soundInstance.play().catch(e => console.log("Waiting for user interaction..."));
 }
 function hapticVibrate(pattern) { if (navigator.vibrate) navigator.vibrate(pattern); }
-
 
 let masterScores = JSON.parse(localStorage.getItem('tishMasterScores')) || { pve: { tri: 0, sq: 0 }, local: { tri: 0, sq: 0 }, online: { tri: 0, sq: 0 } };
 
@@ -74,7 +71,6 @@ function addScore(winnerShape) {
     localStorage.setItem('tishMasterScores', JSON.stringify(masterScores));
     updateScoreboardUI();
 }
-
 
 const modeSelect = document.getElementById('mode-select');
 const shapeSelect = document.getElementById('shape-select');
@@ -106,6 +102,7 @@ function handleModeChange() {
     document.getElementById('link-copied-msg').style.display = 'none';
     updateScoreboardUI();
 }
+
 function copyInviteLink() {
     initAudio(); 
     let selectedTime = parseInt(timeSelect.value); 
@@ -125,7 +122,6 @@ function copyInviteLink() {
     });
 }
 
-
 window.onload = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const joinRoomCode = urlParams.get('room');
@@ -142,7 +138,6 @@ window.onload = () => {
         window.history.pushState({}, document.title, window.location.pathname);
     }
 };
-
 
 const connections = {
     0: [1, 3],       1: [0, 2, 4],    2: [1, 5],
@@ -208,7 +203,6 @@ function cancelOnline() {
     window.history.pushState({}, document.title, window.location.pathname);
 }
 
-
 socket.on('start_game', (data) => {
     overlay.style.display = 'none';
     isOnlineGame = true;
@@ -219,13 +213,23 @@ socket.on('start_game', (data) => {
     document.getElementById('score-title').innerText = "Vs " + oppName;
     
     chatContainer.style.display = 'flex';
+    if (typeof window.isChatEnabled === 'undefined') window.isChatEnabled = true;
+
     chatMessages.innerHTML = `
         <div style="color:#888; font-size:0.8rem; margin-top:5px; padding: 0 5px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 5px; margin-bottom: 5px;">
-            <span>Chat connected with ${oppName}</span>
-            <button onclick="reportPlayer('${oppName}')" style="background: #e74c3c; color: white; border: none; border-radius: 3px; padding: 3px 8px; font-size: 0.7rem; cursor: pointer; font-weight: bold;">🚩 Report</button>
+            <span>Chat with ${oppName}</span>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <label class="switch" title="Turn Chat On/Off">
+                    <input type="checkbox" ${window.isChatEnabled ? 'checked' : ''} onchange="window.toggleChat(this.checked)">
+                    <span class="slider round"></span>
+                </label>
+                <button onclick="reportPlayer('${oppName}')" style="background: #e74c3c; color: white; border: none; border-radius: 3px; padding: 2px 6px; font-size: 0.6rem; cursor: pointer; font-weight: bold; letter-spacing: 0.5px;">REPORT</button>
+            </div>
         </div>
     `;
     
+    if (typeof window.toggleChat === 'function') window.toggleChat(window.isChatEnabled, true);
+    socket.emit('toggle_chat', { roomCode: myRoomCode, enabled: window.isChatEnabled });
 
     timeSelect.value = data.time.toString();
     timeLeft = data.time;
@@ -255,7 +259,7 @@ socket.on('opponent_moved', (data) => {
 });
 
 socket.on('opponent_disconnected', () => {
-    appendChatMessage("Opponent left the room.", 'other');
+    appendChatMessage("Opponent left the room.", 'system');
     updateStatus("Opponent Disconnected! You win.", true);
     playSound('win');
     setTimeout(() => {
@@ -280,20 +284,16 @@ socket.on('opponent_wants_rematch', () => {
 
 socket.on('rematch_accepted', () => {
     stopTimer();
-    
     board = [0,0,0, 0,0,0, 0,0,0]; 
     selectedIndex = null; 
     piecesDropped = { 1: 0, 2: 0 };
-    
     drawBoard(); 
    
     myOnlineRole = (myOnlineRole === 1) ? 2 : 1;
-    
     timeLeft = parseInt(timeSelect.value);
     updateTimerUI();
     
     startSetupPhase(true); 
-    
     let shapeName = myOnlineRole === 1 ? "Triangle (Red)" : "Square (Blue)";
     let firstMoveMsg = myOnlineRole === 1 ? "Your turn to drop!" : "Waiting for opponent...";
     
@@ -458,56 +458,6 @@ function cpuDropPhase() {
     drawBoard(); checkSetupComplete();
 }
 
-function checkSetupComplete() {
-    if (piecesDropped[1] === 3 && piecesDropped[2] === 3) {
-        gamePhase = 'READY'; 
-        if (isOnlineGame) {
-            startPlayPhase();
-        } else {
-            actionBtn.disabled = false;
-            actionBtn.innerText = "Start Game"; 
-            actionBtn.style.backgroundColor = '#2ed573';
-            actionBtn.style.color = 'black';
-            updateStatus("Setup Complete! Click Start Game.");
-        }
-    } else {
-        currentPlayer = (currentPlayer === 1) ? 2 : 1;
-        let msg = `${getPlayerName()}'s turn to drop`;
-        if (isOnlineGame && currentPlayer !== myOnlineRole) msg = "Waiting for opponent...";
-        updateStatus(msg);
-        if (isVsComputer && currentPlayer === cpuShape) setTimeout(cpuDropPhase, 600);
-    }
-}
-
-function getWinMessage(winningShape) {
-    if (isOnlineGame) return winningShape === myOnlineRole ? "YOU WIN ONLINE!" : "OPPONENT WINS!";
-    if (isVsComputer) return winningShape === humanShape ? "YOU WIN!" : "COMPUTER WON!";
-    return winningShape === 1 ? "TRIANGLE WINS!" : "SQUARE WINS!";
-}
-
-function handleWinAudioVisual(winningShape) {
-    addScore(winningShape);
-    let msg = getWinMessage(winningShape);
-    
-    let localPlayerWon = false;
-    
-    if (modeSelect.value === 'online' && isOnlineGame && winningShape === myOnlineRole) {
-        localPlayerWon = true;
-    } else if (modeSelect.value === 'pve' && isVsComputer && winningShape === humanShape) {
-        localPlayerWon = true;
-    }
-    if (localPlayerWon && window.recordWin) {
-        window.recordWin();
-    }
-    
-    if ((isVsComputer && winningShape === cpuShape) || (isOnlineGame && winningShape !== myOnlineRole)) {
-        playSound('boo');
-    } else {
-        playSound('win'); triggerVictoryFireworks(); 
-    }
-    return msg;
-}
-
 function finishMoveLogic(playerWhoMoved) {
     if (checkWin(playerWhoMoved)) {
         stopTimer();
@@ -567,23 +517,25 @@ function cpuMovePhase() {
     }
     executeSlideAnimation(bestMove.from, bestMove.to, false);
 }
-
-function startTimer() {
-    clearInterval(timerInterval);
-    timerInterval = setInterval(() => {
-        timeLeft--; updateTimerUI();
-        if (timeLeft <= 0) {
-            stopTimer();
-            let winningShape = (currentPlayer === 1) ? 2 : 1;
-            endGame(`TIME'S UP! ${handleWinAudioVisual(winningShape)}`, 'orange');
+function checkSetupComplete() {
+    if (piecesDropped[1] === 3 && piecesDropped[2] === 3) {
+        gamePhase = 'READY'; 
+        if (isOnlineGame) {
+            startPlayPhase();
+        } else {
+            actionBtn.disabled = false;
+            actionBtn.innerText = "Start Game"; 
+            actionBtn.style.backgroundColor = '#2ed573';
+            actionBtn.style.color = 'black';
+            updateStatus("Setup Complete! Click Start Game.");
         }
-    }, 1000);
-}
-function stopTimer() { clearInterval(timerInterval); }
-function updateTimerUI() {
-    let m = Math.floor(timeLeft / 60); let s = timeLeft % 60;
-    timerDisplay.innerText = (m < 10 ? "0"+m : m) + ":" + (s < 10 ? "0"+s : s);
-    timerDisplay.style.color = timeLeft <= 10 ? '#ff4757' : '#888';
+    } else {
+        currentPlayer = (currentPlayer === 1) ? 2 : 1;
+        let msg = `${getPlayerName()}'s turn to drop`;
+        if (isOnlineGame && currentPlayer !== myOnlineRole) msg = "Waiting for opponent...";
+        updateStatus(msg);
+        if (isVsComputer && currentPlayer === cpuShape) setTimeout(cpuDropPhase, 600);
+    }
 }
 
 function checkWin(player) {
@@ -594,6 +546,35 @@ function checkWin(player) {
 function hasLegalMoves(player) {
     for (let i = 0; i < 9; i++) { if (board[i] === player) { for (let n of connections[i]) { if (board[n] === 0) return true; } } }
     return false;
+}
+
+function getWinMessage(winningShape) {
+    if (isOnlineGame) return winningShape === myOnlineRole ? "YOU WIN ONLINE!" : "OPPONENT WINS!";
+    if (isVsComputer) return winningShape === humanShape ? "YOU WIN!" : "COMPUTER WON!";
+    return winningShape === 1 ? "TRIANGLE WINS!" : "SQUARE WINS!";
+}
+
+function handleWinAudioVisual(winningShape) {
+    addScore(winningShape);
+    let msg = getWinMessage(winningShape);
+    
+    let localPlayerWon = false;
+    
+    if (modeSelect.value === 'online' && isOnlineGame && winningShape === myOnlineRole) {
+        localPlayerWon = true;
+    } else if (modeSelect.value === 'pve' && isVsComputer && winningShape === humanShape) {
+        localPlayerWon = true;
+    }
+    if (localPlayerWon && window.recordWin) {
+        window.recordWin();
+    }
+    
+    if ((isVsComputer && winningShape === cpuShape) || (isOnlineGame && winningShape !== myOnlineRole)) {
+        playSound('boo');
+    } else {
+        playSound('win'); triggerVictoryFireworks(); 
+    }
+    return msg;
 }
 
 function drawBoard() {
@@ -619,6 +600,24 @@ function getPlayerName() {
     return currentPlayer === 1 ? "Triangle's" : "Square's";
 }
 
+function startTimer() {
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+        timeLeft--; updateTimerUI();
+        if (timeLeft <= 0) {
+            stopTimer();
+            let winningShape = (currentPlayer === 1) ? 2 : 1;
+            endGame(`TIME'S UP! ${handleWinAudioVisual(winningShape)}`, 'orange');
+        }
+    }, 1000);
+}
+function stopTimer() { clearInterval(timerInterval); }
+function updateTimerUI() {
+    let m = Math.floor(timeLeft / 60); let s = timeLeft % 60;
+    timerDisplay.innerText = (m < 10 ? "0"+m : m) + ":" + (s < 10 ? "0"+s : s);
+    timerDisplay.style.color = timeLeft <= 10 ? '#ff4757' : '#888';
+}
+
 function endGame(msg, color) {
     gamePhase = 'OVER';
     statusDiv.innerText = msg;
@@ -633,7 +632,6 @@ function endGame(msg, color) {
     }
     if(document.getElementById('abort-btn')) document.getElementById('abort-btn').style.display = 'none';
 
-    
     if (isOnlineGame) {
         actionBtn.innerText = "🔄 Request Rematch";
         actionBtn.disabled = false;
@@ -644,7 +642,6 @@ function endGame(msg, color) {
             document.getElementById('new-random-btn').style.display = 'block';
         }
     } else {
-        
         actionBtn.innerText = "Play Again";
         actionBtn.disabled = false;
         actionBtn.style.backgroundColor = '#3498db';
@@ -652,7 +649,6 @@ function endGame(msg, color) {
     }
 }
     
-
 function resetGame() {
     stopTimer(); board = [0,0,0,0,0,0,0,0,0]; gamePhase = 'INIT';
     selectedIndex = null; piecesDropped = { 1: 0, 2: 0 };
@@ -683,110 +679,6 @@ function resetGame() {
     
     abortBtn.style.display = 'none';
     newRandomBtn.style.display = 'none';
-}
-
-function initAudio() {
-    if (!audioCtx) audioCtx = new AudioContext();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-}
-let audioCtx;
-document.body.addEventListener('click', initAudio, { once: true });
-
-handleModeChange();
-shapeSelect.addEventListener('change', () => {
-    if (gamePhase !== 'INIT') resetGame();
-});
-
-timeSelect.addEventListener('change', () => {
-     let val = parseInt(timeSelect.value);
-     let m = Math.floor(val / 60); let s = val % 60;
-     timerDisplay.innerText = (m < 10 ? "0"+m : m) + ":" + (s < 10 ? "0"+s : s);
-     
-     if (gamePhase !== 'INIT') resetGame();
-});
-
-let initialTimeVal = parseInt(timeSelect.value);
-let initialM = Math.floor(initialTimeVal / 60); let initialS = initialTimeVal % 60;
-timerDisplay.innerText = (initialM < 10 ? "0"+initialM : initialM) + ":" + (initialS < 10 ? "0"+initialS : initialS);
-
-function openModal(id) { 
-    document.getElementById(id).style.display = 'flex'; 
-}
-function closeModal(id) { 
-    document.getElementById(id).style.display = 'none'; 
-}
-
-window.onclick = function(event) {
-    if (event.target.classList.contains('modal-overlay') && event.target.id !== 'username-modal') {
-        event.target.style.display = "none";
-    }
-};
-
-function sendChatMessage() {
-    let msg = chatInput.value.trim();
-    if (msg === '' || !isOnlineGame) return;
-    
-    const badWords = ["nazi", "niggeer", "nigga", "n1gga", "hate", "shit", "sh1t", "fuck", "fck", "f@ck", "ass", "a$$", "israel", "holocaust", "holocust", "hitler", "negro", "kill", "killer", "kill yourself", "killyourself", "kys", "dick", "cock", "dih", "pussy", "bitch", "b1tch", "bastard", "porn", "cp", "cunt", "faggot", "fag", "slut", "stupid", "idiot", "motherfucker", "whore", "retard", "twat", "wanker", "dumbass", "bullshit", "dyke", "tranny", "rape", "pedo", "pedophile", "incest", "tits", "vagina", "penis", "boob", "suicide", "hang yourself", "die"]; 
-    badWords.forEach(word => {
-        const regex = new RegExp("\\b" + word + "\\b", "gi"); 
-        msg = msg.replace(regex, "***");
-    });
-  
-    appendChatMessage(msg, 'self', window.myPlayerPfp);
-   
-    socket.emit('send_chat', { roomCode: myRoomCode, message: msg, pfp: window.myPlayerPfp });
-    
-    chatInput.value = '';
-}
-
-chatSendBtn.addEventListener('click', sendChatMessage);
-chatInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') sendChatMessage();
-});
-
-socket.on('receive_chat', (data) => {
-    appendChatMessage(data.message, 'other', data.pfp);
-    if (sounds.drop) {
-        let chatSound = sounds.drop.cloneNode();
-        chatSound.volume = 0.2;
-        chatSound.play().catch(e => {});
-    }
-});
-
-function appendChatMessage(msg, sender, pfpUrl = "https://api.dicebear.com/9.x/bottts/svg?seed=System") {
-    const wrapper = document.createElement('div');
-    wrapper.style.display = 'flex';
-    wrapper.style.alignItems = 'flex-end';
-    wrapper.style.gap = '8px';
-    wrapper.style.marginBottom = '8px';
-    wrapper.style.maxWidth = '90%';
-    wrapper.style.alignSelf = sender === 'self' ? 'flex-end' : 'flex-start';
-    
-    if (sender === 'self') {
-        wrapper.style.flexDirection = 'row-reverse';
-    }
-
-    const img = document.createElement('img');
-    img.src = pfpUrl;
-    img.style.width = '34px';
-    img.style.height = '34px';
-    img.style.borderRadius = '50%';
-    img.style.objectFit = 'cover';
-    img.style.cursor = 'pointer';
-    img.style.border = '1px solid #666';
-    img.onclick = () => { if (window.viewPfp) window.viewPfp(img.src); };
-
-    const div = document.createElement('div');
-    div.className = `chat-msg ${sender}`;
-    div.innerText = msg;
-    div.style.alignSelf = 'auto'; 
-    div.style.maxWidth = '100%';
-    
-    wrapper.appendChild(img);
-    wrapper.appendChild(div);
-
-    chatMessages.appendChild(wrapper);
-    chatMessages.scrollTop = chatMessages.scrollHeight; 
 }
 
 function abortGame() {
@@ -848,7 +740,159 @@ socket.on('opponent_forced_restart', () => {
 });
 
 window.reportPlayer = function(offenderName) {
-    if (confirm(`Are you sure you want to report ${offenderName} for inappropriate behavior or chat?`)) {
-        alert(`Thank you. ${offenderName} has been reported to the administration and will be reviewed.`);
+    if (confirm(`Do you want to report ${offenderName} for an inappropriate picture?`)) {
+        alert(`Thank you. ${offenderName}'s picture has been reported to the administration and will be reviewed.`);
     }
 };
+
+function initAudio() {
+    if (!audioCtx) audioCtx = new AudioContext();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+let audioCtx;
+document.body.addEventListener('click', initAudio, { once: true });
+
+handleModeChange();
+shapeSelect.addEventListener('change', () => {
+    if (gamePhase !== 'INIT') resetGame();
+});
+
+timeSelect.addEventListener('change', () => {
+     let val = parseInt(timeSelect.value);
+     let m = Math.floor(val / 60); let s = val % 60;
+     timerDisplay.innerText = (m < 10 ? "0"+m : m) + ":" + (s < 10 ? "0"+s : s);
+     
+     if (gamePhase !== 'INIT') resetGame();
+});
+
+let initialTimeVal = parseInt(timeSelect.value);
+let initialM = Math.floor(initialTimeVal / 60); let initialS = initialTimeVal % 60;
+timerDisplay.innerText = (initialM < 10 ? "0"+initialM : initialM) + ":" + (initialS < 10 ? "0"+initialS : initialS);
+
+function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal-overlay') && event.target.id !== 'username-modal') {
+        event.target.style.display = "none";
+    }
+};
+
+window.isChatEnabled = true;
+
+window.toggleChat = function(enabled, isInit = false) {
+    window.isChatEnabled = enabled;
+    if (!enabled) {
+        chatInput.disabled = true;
+        chatInput.placeholder = "Chat is turned off...";
+        chatSendBtn.disabled = true;
+        chatInput.style.opacity = '0.5';
+        if (!isInit) appendChatMessage("You disabled the chat.", 'system');
+    } else {
+        chatInput.disabled = false;
+        chatInput.placeholder = "Type a message... (Report bad PFPs above)";
+        chatSendBtn.disabled = false;
+        chatInput.style.opacity = '1';
+        if (!isInit) appendChatMessage("You enabled the chat.", 'system');
+    }
+    
+    if (!isInit && isOnlineGame) {
+        socket.emit('toggle_chat', { roomCode: myRoomCode, enabled: enabled });
+    }
+};
+
+socket.on('opponent_toggled_chat', (enabled) => {
+    if (enabled) {
+        appendChatMessage("Opponent enabled their chat.", 'system');
+    } else {
+        appendChatMessage("Opponent disabled their chat. They cannot see your messages.", 'system');
+    }
+});
+
+function sendChatMessage() {
+    if (!window.isChatEnabled) return;
+    
+    let msg = chatInput.value.trim();
+    if (msg === '' || !isOnlineGame) return;
+    
+    const badWords = ["nazi", "niggeer", "nigga", "n1gga", "hate", "shit", "sh1t", "fuck", "fck", "f@ck", "ass", "a$$", "israel", "holocaust", "holocust", "hitler", "negro", "kill", "killer", "kill yourself", "killyourself", "kys", "dick", "cock", "dih", "pussy", "bitch", "b1tch", "bastard", "porn", "cp", "cunt", "faggot", "fag", "slut", "stupid", "idiot", "motherfucker", "whore", "retard", "twat", "wanker", "dumbass", "bullshit", "dyke", "tranny", "rape", "pedo", "pedophile", "incest", "tits", "vagina", "penis", "boob", "suicide", "hang yourself", "die"]; 
+    badWords.forEach(word => {
+        const regex = new RegExp("\\b" + word + "\\b", "gi"); 
+        msg = msg.replace(regex, "***");
+    });
+  
+    appendChatMessage(msg, 'self', window.myPlayerPfp);
+   
+    socket.emit('send_chat', { roomCode: myRoomCode, message: msg, pfp: window.myPlayerPfp });
+    
+    chatInput.value = '';
+}
+
+chatSendBtn.addEventListener('click', sendChatMessage);
+chatInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendChatMessage();
+});
+
+socket.on('receive_chat', (data) => {
+    if (!window.isChatEnabled) return;
+    
+    appendChatMessage(data.message, 'other', data.pfp);
+    if (sounds.drop) {
+        let chatSound = sounds.drop.cloneNode();
+        chatSound.volume = 0.2;
+        chatSound.play().catch(e => {});
+    }
+});
+
+function appendChatMessage(msg, sender, pfpUrl = "https://api.dicebear.com/9.x/bottts/svg?seed=System") {
+    const wrapper = document.createElement('div');
+    wrapper.style.display = 'flex';
+    wrapper.style.alignItems = 'flex-end';
+    wrapper.style.gap = '8px';
+    wrapper.style.marginBottom = '8px';
+    wrapper.style.maxWidth = '90%';
+    wrapper.style.alignSelf = sender === 'self' ? 'flex-end' : 'flex-start';
+    
+    const div = document.createElement('div');
+    div.className = `chat-msg ${sender}`;
+    div.innerText = msg;
+    div.style.alignSelf = 'auto'; 
+    div.style.maxWidth = '100%';
+
+    if (sender === 'system') {
+        wrapper.style.maxWidth = '100%';
+        wrapper.style.alignSelf = 'center';
+        wrapper.style.justifyContent = 'center';
+        div.style.background = 'transparent';
+        div.style.color = '#aaa';
+        div.style.fontSize = '0.75rem';
+        div.style.fontStyle = 'italic';
+        div.style.padding = '2px';
+        
+        wrapper.appendChild(div);
+        chatMessages.appendChild(wrapper);
+        chatMessages.scrollTop = chatMessages.scrollHeight; 
+        return; 
+    }
+
+    if (sender === 'self') {
+        wrapper.style.flexDirection = 'row-reverse';
+    }
+
+    const img = document.createElement('img');
+    img.src = pfpUrl;
+    img.style.width = '34px';
+    img.style.height = '34px';
+    img.style.borderRadius = '50%';
+    img.style.objectFit = 'cover';
+    img.style.cursor = 'pointer';
+    img.style.border = '1px solid #666';
+    img.style.flexShrink = '0';
+    img.onclick = () => { if (window.viewPfp) window.viewPfp(img.src); };
+
+    wrapper.appendChild(img);
+    wrapper.appendChild(div);
+
+    chatMessages.appendChild(wrapper);
+    chatMessages.scrollTop = chatMessages.scrollHeight; 
+}
