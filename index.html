@@ -195,13 +195,11 @@
             <input type="text" id="username-input" maxlength="15" placeholder="Enter name (max 15 chars)" 
                    style="width: 80%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 2px solid #3498db; background: #1e1e24; color: white; font-size: 1.2rem; text-align: center; outline: none;">
             
-            <p style="margin-top: 15px; margin-bottom: 10px; color: #aaa; font-size: 0.9rem;">Choose an Avatar (Optional):</p>
-            <div id="avatar-picker" style="display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-                <img src="https://api.dicebear.com/9.x/bottts/svg?seed=Tish1" class="avatar-option" onclick="window.selectAvatar(this)" style="width: 45px; height: 45px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; background: #222; transition: all 0.2s;">
-                <img src="https://api.dicebear.com/9.x/bottts/svg?seed=Tish2" class="avatar-option" onclick="window.selectAvatar(this)" style="width: 45px; height: 45px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; background: #222; transition: all 0.2s;">
-                <img src="https://api.dicebear.com/9.x/bottts/svg?seed=Tish3" class="avatar-option" onclick="window.selectAvatar(this)" style="width: 45px; height: 45px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; background: #222; transition: all 0.2s;">
-                <img src="https://api.dicebear.com/9.x/bottts/svg?seed=Tish4" class="avatar-option" onclick="window.selectAvatar(this)" style="width: 45px; height: 45px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; background: #222; transition: all 0.2s;">
-                <img src="https://api.dicebear.com/9.x/bottts/svg?seed=Tish5" class="avatar-option" onclick="window.selectAvatar(this)" style="width: 45px; height: 45px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; background: #222; transition: all 0.2s;">
+            <p style="margin-top: 15px; margin-bottom: 10px; color: #aaa; font-size: 0.9rem;">Upload Profile Picture (Optional):</p>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 20px;">
+                <img id="pfp-preview" src="https://api.dicebear.com/9.x/bottts/svg?seed=Random" style="width: 60px; height: 60px; border-radius: 50%; border: 2px solid #3498db; object-fit: cover; background: #222;">
+                <input type="file" id="pfp-upload" accept="image/*" style="display: none;" onchange="handlePfpUpload(event)">
+                <button onclick="document.getElementById('pfp-upload').click()" style="padding: 6px 12px; background: #444; color: white; border: 1px solid #666; border-radius: 5px; cursor: pointer; font-size: 0.8rem;">Choose Image</button>
             </div>
 
             <button onclick="submitUsername()" style="padding: 12px 30px; background-color: #2ecc71; color: black; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1.1rem; text-transform: uppercase;">Save Profile</button>
@@ -235,11 +233,43 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
-
-       let currentUser = null;
+        let currentUser = null;
         let pendingUser = null; 
         window.myPlayerName = "Random"; 
-       
+        window.uploadedPfp = null; 
+        window.handlePfpUpload = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_SIZE = 150; 
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
+                    } else {
+                        if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+                    }
+                    
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    window.uploadedPfp = dataUrl;
+                    document.getElementById('pfp-preview').src = dataUrl; 
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
+        
+
         onAuthStateChanged(auth, async (user) => {
             const authDiv = document.getElementById('auth-section');
             if (user) {
@@ -260,9 +290,10 @@
                     let displayName = docSnap.data().name;
                     window.myPlayerName = displayName; 
                     
+                    let finalLoadedPhoto = docSnap.data().photoURL || userPhoto;
                     authDiv.innerHTML = `
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <img src="${userPhoto}" style="width: 28px; height: 28px; border-radius: 50%; border: 2px solid #2ecc71; background: #222;">
+                            <img src="${finalLoadedPhoto}" style="width: 28px; height: 28px; border-radius: 50%; border: 2px solid #2ecc71; background: #222; object-fit: cover;">
                             <span style="color: #2ecc71; font-weight: bold;">${displayName}</span> 
                             <button onclick="window.logout()" style="padding: 5px 10px; background: #444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Logout</button>
                         </div>`;
@@ -273,17 +304,6 @@
                 authDiv.innerHTML = `<button onclick="window.loginWithGoogle()" style="padding: 8px 15px; background: #ea4335; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Sign In</button>`;
             }
         });
-
-        window.chosenAvatar = null;
-        window.selectAvatar = (imgElement) => {
-            document.querySelectorAll('.avatar-option').forEach(img => {
-                img.style.borderColor = 'transparent';
-                img.style.transform = 'scale(1)';
-            });
-            imgElement.style.borderColor = '#3498db';
-            imgElement.style.transform = 'scale(1.1)';
-            window.chosenAvatar = imgElement.src;
-        };
 
         window.submitUsername = async () => {
             const inputField = document.getElementById('username-input');
@@ -311,7 +331,7 @@
             if (pendingUser) {
                 const userRef = doc(db, 'users', pendingUser.uid);
                 
-                let finalPhoto = window.chosenAvatar || pendingUser.photoURL || `https://api.dicebear.com/9.x/bottts/svg?seed=${finalName}`;
+                let finalPhoto = window.uploadedPfp || pendingUser.photoURL || `https://api.dicebear.com/9.x/bottts/svg?seed=${finalName}`;
                 
                 await setDoc(userRef, { name: finalName, wins: 0, photoURL: finalPhoto }); 
                 
@@ -323,7 +343,7 @@
                 const authDiv = document.getElementById('auth-section');
                 authDiv.innerHTML = `
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <img src="${finalPhoto}" style="width: 28px; height: 28px; border-radius: 50%; border: 2px solid #2ecc71; background: #222;">
+                            <img src="${finalPhoto}" style="width: 28px; height: 28px; border-radius: 50%; border: 2px solid #2ecc71; background: #222; object-fit: cover;">
                             <span style="color: #2ecc71; font-weight: bold;">${finalName}</span> 
                             <button onclick="window.logout()" style="padding: 5px 10px; background: #444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Logout</button>
                         </div>`;
@@ -358,7 +378,7 @@
                     <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #444; font-size: 1.1rem;">
                         <div style="display: flex; align-items: center; gap: 12px;">
                             <span style="color: #888; font-weight: bold; width: 20px;">${rank}.</span>
-                            <img src="${playerPfp}" style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #3498db; background: #222;">
+                            <img src="${playerPfp}" style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #3498db; background: #222; object-fit: cover;">
                             <span style="font-weight: 500;">${data.name}</span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 15px;">
@@ -374,6 +394,7 @@
                 console.error(e);
             }
         };
+       
     </script>
 
     <script src="/socket.io/socket.io.js"></script>
