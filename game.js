@@ -255,6 +255,7 @@ socket.on('opponent_moved', (data) => {
 });
 
 socket.on('opponent_disconnected', () => {
+    // Uses fallback PFP or default for disconnected user
     appendChatMessage("Opponent left the room.", 'other');
     updateStatus("Opponent Disconnected! You win.", true);
     playSound('win');
@@ -709,7 +710,6 @@ let initialTimeVal = parseInt(timeSelect.value);
 let initialM = Math.floor(initialTimeVal / 60); let initialS = initialTimeVal % 60;
 timerDisplay.innerText = (initialM < 10 ? "0"+initialM : initialM) + ":" + (initialS < 10 ? "0"+initialS : initialS);
 
-
 function openModal(id) { 
     document.getElementById(id).style.display = 'flex'; 
 }
@@ -726,22 +726,17 @@ window.onclick = function(event) {
 function sendChatMessage() {
     let msg = chatInput.value.trim();
     if (msg === '' || !isOnlineGame) return;
-            const badWords = [
-                "nazi", "niggeer", "nigga", "n1gga", "hate", "shit", "sh1t", "fuck", "fck", "f@ck", 
-                "ass", "a$$", "israel", "holocaust", "holocust", "hitler", "negro", "kill", "killer", 
-                "kill yourself", "killyourself", "kys", "dick", "cock", "dih", "pussy", "bitch", 
-                "b1tch", "bastard", "porn", "cp", "cunt", "faggot", "fag", "slut", "stupid", "idiot", 
-                "motherfucker", "whore", "retard", "twat", "wanker", "dumbass", "bullshit", "dyke", 
-                "tranny", "rape", "pedo", "pedophile", "incest", "tits", "vagina", "penis", "boob", 
-                "suicide", "hang yourself", "die"
-            ]; 
-            badWords.forEach(word => {
-                const regex = new RegExp("\\b" + word + "\\b", "gi"); 
-                msg = msg.replace(regex, "***");
-            });
+    
+    const badWords = ["nazi", "niggeer", "nigga", "n1gga", "hate", "shit", "sh1t", "fuck", "fck", "f@ck", "ass", "a$$", "israel", "holocaust", "holocust", "hitler", "negro", "kill", "killer", "kill yourself", "killyourself", "kys", "dick", "cock", "dih", "pussy", "bitch", "b1tch", "bastard", "porn", "cp", "cunt", "faggot", "fag", "slut", "stupid", "idiot", "motherfucker", "whore", "retard", "twat", "wanker", "dumbass", "bullshit", "dyke", "tranny", "rape", "pedo", "pedophile", "incest", "tits", "vagina", "penis", "boob", "suicide", "hang yourself", "die"]; 
+    badWords.forEach(word => {
+        const regex = new RegExp("\\b" + word + "\\b", "gi"); 
+        msg = msg.replace(regex, "***");
+    });
   
-    appendChatMessage(msg, 'self');
-    socket.emit('send_chat', { roomCode: myRoomCode, message: msg });
+    appendChatMessage(msg, 'self', window.myPlayerPfp);
+   
+    socket.emit('send_chat', { roomCode: myRoomCode, message: msg, pfp: window.myPlayerPfp });
+    
     chatInput.value = '';
 }
 
@@ -750,8 +745,8 @@ chatInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendChatMessage();
 });
 
-socket.on('receive_chat', (msg) => {
-    appendChatMessage(msg, 'other');
+socket.on('receive_chat', (data) => {
+    appendChatMessage(data.message, 'other', data.pfp);
     if (sounds.drop) {
         let chatSound = sounds.drop.cloneNode();
         chatSound.volume = 0.2;
@@ -759,11 +754,39 @@ socket.on('receive_chat', (msg) => {
     }
 });
 
-function appendChatMessage(msg, sender) {
+function appendChatMessage(msg, sender, pfpUrl = "https://api.dicebear.com/9.x/bottts/svg?seed=System") {
+    const wrapper = document.createElement('div');
+    wrapper.style.display = 'flex';
+    wrapper.style.alignItems = 'flex-end';
+    wrapper.style.gap = '8px';
+    wrapper.style.marginBottom = '8px';
+    wrapper.style.maxWidth = '90%';
+    wrapper.style.alignSelf = sender === 'self' ? 'flex-end' : 'flex-start';
+    
+    if (sender === 'self') {
+        wrapper.style.flexDirection = 'row-reverse';
+    }
+
+    const img = document.createElement('img');
+    img.src = pfpUrl;
+    img.style.width = '24px';
+    img.style.height = '24px';
+    img.style.borderRadius = '50%';
+    img.style.objectFit = 'cover';
+    img.style.cursor = 'pointer';
+    img.style.border = '1px solid #666';
+    img.onclick = () => { if (window.viewPfp) window.viewPfp(img.src); };
+
     const div = document.createElement('div');
     div.className = `chat-msg ${sender}`;
     div.innerText = msg;
-    chatMessages.appendChild(div);
+    div.style.alignSelf = 'auto'; 
+    div.style.maxWidth = '100%';
+    
+    wrapper.appendChild(img);
+    wrapper.appendChild(div);
+
+    chatMessages.appendChild(wrapper);
     chatMessages.scrollTop = chatMessages.scrollHeight; 
 }
 
@@ -824,9 +847,9 @@ socket.on('opponent_forced_restart', () => {
     updateStatus("Opponent restarted the board! Replace your shapes.", true);
     playSound('error'); 
 });
+
 window.reportPlayer = function(offenderName) {
     if (confirm(`Are you sure you want to report ${offenderName} for inappropriate behavior or chat?`)) {
         alert(`Thank you. ${offenderName} has been reported to the administration and will be reviewed.`);
-        
     }
 };

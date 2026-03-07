@@ -211,7 +211,13 @@
             <button class="close-modal" onclick="closeModal('leaderboard-modal')">✖</button>
             <h2 style="color: #f1c40f;">Global Leaderboard</h2>
             <div id="leaderboard-list" style="margin-top: 20px;">
-                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="pfp-modal" class="modal-overlay" onclick="closeModal('pfp-modal')">
+        <div style="position: relative; max-width: 90%; max-height: 90%; animation: popInModal 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+            <img id="pfp-large-view" src="" style="width: 250px; height: 250px; border-radius: 15px; object-fit: cover; border: 3px solid #3498db; box-shadow: 0 10px 30px rgba(0,0,0,0.9);">
         </div>
     </div>
 
@@ -235,8 +241,16 @@
         const provider = new GoogleAuthProvider();
         let currentUser = null;
         let pendingUser = null; 
+        
         window.myPlayerName = "Random"; 
+        window.myPlayerPfp = "https://api.dicebear.com/9.x/bottts/svg?seed=Random"; 
         window.uploadedPfp = null; 
+
+        window.viewPfp = (url) => {
+            document.getElementById('pfp-large-view').src = url;
+            document.getElementById('pfp-modal').style.display = 'flex';
+        };
+
         window.handlePfpUpload = (event) => {
             const file = event.target.files[0];
             if (!file) return;
@@ -269,7 +283,6 @@
             reader.readAsDataURL(file);
         };
         
-
         onAuthStateChanged(auth, async (user) => {
             const authDiv = document.getElementById('auth-section');
             if (user) {
@@ -291,6 +304,8 @@
                     window.myPlayerName = displayName; 
                     
                     let finalLoadedPhoto = docSnap.data().photoURL || userPhoto;
+                    window.myPlayerPfp = finalLoadedPhoto;
+
                     authDiv.innerHTML = `
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <img src="${finalLoadedPhoto}" style="width: 28px; height: 28px; border-radius: 50%; border: 2px solid #2ecc71; background: #222; object-fit: cover;">
@@ -339,6 +354,7 @@
                 pendingUser = null;
                 document.getElementById('username-modal').style.display = 'none'; 
                 window.myPlayerName = finalName; 
+                window.myPlayerPfp = finalPhoto;
                 
                 const authDiv = document.getElementById('auth-section');
                 authDiv.innerHTML = `
@@ -378,7 +394,7 @@
                     <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #444; font-size: 1.1rem;">
                         <div style="display: flex; align-items: center; gap: 12px;">
                             <span style="color: #888; font-weight: bold; width: 20px;">${rank}.</span>
-                            <img src="${playerPfp}" style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #3498db; background: #222; object-fit: cover;">
+                            <img src="${playerPfp}" onclick="window.viewPfp('${playerPfp}')" style="width: 45px; height: 45px; border-radius: 50%; border: 2px solid #3498db; background: #222; object-fit: cover; cursor: pointer;">
                             <span style="font-weight: 500;">${data.name}</span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 15px;">

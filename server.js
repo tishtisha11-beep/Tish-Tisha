@@ -76,17 +76,14 @@ io.on('connection', (socket) => {
     });
 
     socket.on('send_chat', (data) => {
-      
-        socket.to(data.roomCode).emit('receive_chat', data.message);
+        socket.to(data.roomCode).emit('receive_chat', { message: data.message, pfp: data.pfp });
     });
 
-   
     socket.on('request_rematch', (roomCode) => {
         if (rooms[roomCode]) {
             rooms[roomCode].rematchRequests = (rooms[roomCode].rematchRequests || 0) + 1;
             socket.to(roomCode).emit('opponent_wants_rematch');
 
-          
             if (rooms[roomCode].rematchRequests === 2) {
                 rooms[roomCode].rematchRequests = 0; 
                 io.in(roomCode).emit('rematch_accepted'); 
