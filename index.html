@@ -262,7 +262,26 @@
         window.submitUsername = async () => {
             const inputField = document.getElementById('username-input');
             let finalName = inputField.value.trim();
-            if (finalName === "") finalName = "Anonymous";
+            if (finalName === "") {
+                alert("You must enter a username to play online!");
+                return;
+            }
+            const badWords = [ "nazi", "niggeer", "nigga", "n1gga", "hate", "shit", "sh1t", "fuck", "fck", "f@ck", 
+                "ass", "a$$", "israel", "holocaust", "holocust", "hitler", "negro", "kill", "killer", 
+                "kill yourself", "killyourself", "kys", "dick", "cock", "dih", "pussy", "bitch", 
+                "b1tch", "bastard", "porn", "cp", "cunt", "faggot", "fag", "slut", "stupid", "idiot", 
+                "motherfucker", "whore", "retard", "twat", "wanker", "dumbass", "bullshit", "dyke", 
+                "tranny", "rape", "pedo", "pedophile", "incest", "tits", "vagina", "penis", "boob", 
+                "suicide", "hang yourself", "die"]; 
+            let hasBadWord = false;
+            badWords.forEach(word => {
+                if (finalName.toLowerCase().includes(word.toLowerCase())) hasBadWord = true;
+            });
+
+            if (hasBadWord) {
+                alert("Please choose a more appropriate name.");
+                return;
+            }
             finalName = finalName.substring(0, 15);
             
             if (pendingUser) {
@@ -279,7 +298,6 @@
                                      <button onclick="window.logout()" style="padding: 5px 10px; background: #444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Logout</button>`;
             }
         };
-
         window.loginWithGoogle = () => signInWithPopup(auth, provider).catch(e => console.error(e));
         window.logout = () => signOut(auth);
 

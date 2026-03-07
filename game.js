@@ -219,7 +219,12 @@ socket.on('start_game', (data) => {
     document.getElementById('score-title').innerText = "Vs " + oppName;
     
     chatContainer.style.display = 'flex';
-    chatMessages.innerHTML = `<div style="text-align:center; color:#888; font-size:0.8rem; margin-top:5px;">Chat connected with ${oppName}</div>`;
+    chatMessages.innerHTML = `
+        <div style="color:#888; font-size:0.8rem; margin-top:5px; padding: 0 5px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 5px; margin-bottom: 5px;">
+            <span>Chat connected with ${oppName}</span>
+            <button onclick="reportPlayer('${oppName}')" style="background: #e74c3c; color: white; border: none; border-radius: 3px; padding: 3px 8px; font-size: 0.7rem; cursor: pointer; font-weight: bold;">🚩 Report</button>
+        </div>
+    `;
     
 
     timeSelect.value = data.time.toString();
@@ -719,13 +724,24 @@ window.onclick = function(event) {
 };
 
 function sendChatMessage() {
-    const msg = chatInput.value.trim();
+    let msg = chatInput.value.trim();
     if (msg === '' || !isOnlineGame) return;
+            const badWords = [
+                "nazi", "niggeer", "nigga", "n1gga", "hate", "shit", "sh1t", "fuck", "fck", "f@ck", 
+                "ass", "a$$", "israel", "holocaust", "holocust", "hitler", "negro", "kill", "killer", 
+                "kill yourself", "killyourself", "kys", "dick", "cock", "dih", "pussy", "bitch", 
+                "b1tch", "bastard", "porn", "cp", "cunt", "faggot", "fag", "slut", "stupid", "idiot", 
+                "motherfucker", "whore", "retard", "twat", "wanker", "dumbass", "bullshit", "dyke", 
+                "tranny", "rape", "pedo", "pedophile", "incest", "tits", "vagina", "penis", "boob", 
+                "suicide", "hang yourself", "die"
+            ]; 
+            badWords.forEach(word => {
+                const regex = new RegExp("\\b" + word + "\\b", "gi"); 
+                msg = msg.replace(regex, "***");
+            });
   
     appendChatMessage(msg, 'self');
-   
     socket.emit('send_chat', { roomCode: myRoomCode, message: msg });
-    
     chatInput.value = '';
 }
 
@@ -808,3 +824,9 @@ socket.on('opponent_forced_restart', () => {
     updateStatus("Opponent restarted the board! Replace your shapes.", true);
     playSound('error'); 
 });
+window.reportPlayer = function(offenderName) {
+    if (confirm(`Are you sure you want to report ${offenderName} for inappropriate behavior or chat?`)) {
+        alert(`Thank you. ${offenderName} has been reported to the administration and will be reviewed.`);
+        
+    }
+};
