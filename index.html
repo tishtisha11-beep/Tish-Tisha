@@ -246,12 +246,16 @@
         window.myPlayerName = "Random"; 
         window.myPlayerPfp = "https://api.dicebear.com/9.x/bottts/svg?seed=Random"; 
         window.uploadedPfp = null; 
-        window.sendReportToDatabase = async (offenderName, chatLog) => {
+        window.myPlayerUID = "Unknown"; 
+
+        window.sendReportToDatabase = async (offenderName, offenderUid, chatLog) => {
             try {
                 const newReportRef = doc(collection(db, "reports"));
                 await setDoc(newReportRef, { 
                     reportedPlayer: offenderName, 
+                    reportedPlayerUID: offenderUid || "Unknown", 
                     reportedBy: window.myPlayerName || "Unknown", 
+                    reporterUID: window.myPlayerUID || "Unknown",
                     timestamp: new Date().toISOString(),
                     chatContext: chatLog || "No chat recorded." 
                 });
@@ -316,13 +320,14 @@
                     currentUser = user;
                     let displayName = docSnap.data().name;
                     window.myPlayerName = displayName; 
+                    window.myPlayerUID = user.uid; 
                     
                     let finalLoadedPhoto = docSnap.data().photoURL || userPhoto;
                     window.myPlayerPfp = finalLoadedPhoto;
 
                     authDiv.innerHTML = `
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <img src="${finalLoadedPhoto}" style="width: 36px; height: 36px; border-radius: 50%; border: 2px solid #2ecc71; background: #222; object-fit: cover;">
+                            <img src="${finalLoadedPhoto}" style="width: 36px; height: 36px; border-radius: 50%; border: 2px solid #2ecc71; background: #222; object-fit: cover; flex-shrink: 0;">
                             <span style="color: #2ecc71; font-weight: bold;">${displayName}</span> 
                             <button onclick="window.logout()" style="padding: 5px 10px; background: #444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Logout</button>
                         </div>`;
@@ -330,6 +335,7 @@
             } else {
                 currentUser = null;
                 window.myPlayerName = "Random"; 
+                window.myPlayerUID = "Unknown";
                 authDiv.innerHTML = `<button onclick="window.loginWithGoogle()" style="padding: 8px 15px; background: #ea4335; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Sign In</button>`;
             }
         });
@@ -365,6 +371,7 @@
                 await setDoc(userRef, { name: finalName, wins: 0, photoURL: finalPhoto }); 
                 
                 currentUser = pendingUser;
+                window.myPlayerUID = pendingUser.uid; 
                 pendingUser = null;
                 document.getElementById('username-modal').style.display = 'none'; 
                 window.myPlayerName = finalName; 
@@ -373,7 +380,7 @@
                 const authDiv = document.getElementById('auth-section');
                 authDiv.innerHTML = `
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <img src="${finalPhoto}" style="width: 36px; height: 36px; border-radius: 50%; border: 2px solid #2ecc71; background: #222; object-fit: cover;">
+                            <img src="${finalPhoto}" style="width: 36px; height: 36px; border-radius: 50%; border: 2px solid #2ecc71; background: #222; object-fit: cover; flex-shrink: 0;">
                             <span style="color: #2ecc71; font-weight: bold;">${finalName}</span> 
                             <button onclick="window.logout()" style="padding: 5px 10px; background: #444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Logout</button>
                         </div>`;
@@ -413,7 +420,7 @@
                         </div>
                         <div style="display: flex; align-items: center; gap: 15px;">
                             <span style="color: gold; font-weight: bold;">${trophy} ${data.wins}</span>
-                            <button onclick="window.reportPlayer('${data.name}')" style="background: transparent; border: none; cursor: pointer; font-size: 1.2rem; padding: 0; transition: transform 0.2s;" title="Report Player" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">🚩</button>
+                            <button onclick="window.reportPlayer('${data.name}', '${doc.id}')" style="background: transparent; border: none; cursor: pointer; font-size: 1.2rem; padding: 0; transition: transform 0.2s;" title="Report Player" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">🚩</button>
                         </div>
                     </div>`;
                     rank++;
@@ -424,7 +431,6 @@
                 console.error(e);
             }
         };
-       
     </script>
 
     <script src="/socket.io/socket.io.js"></script>

@@ -114,11 +114,11 @@ function copyInviteLink() {
         overlay.style.display = 'flex';
         overlayText.innerText = "Link copied, Waiting for friend to join...";
         
-        socket.emit('create_room', { roomCode: myRoomCode, time: selectedTime, playerName: window.myPlayerName });
+        socket.emit('create_room', { roomCode: myRoomCode, time: selectedTime, playerName: window.myPlayerName, uid: window.myPlayerUID });
     }).catch(() => {
         overlay.style.display = 'flex';
         overlayText.innerText = `Room: ${myRoomCode} - Waiting for friend...`;
-        socket.emit('create_room', { roomCode: myRoomCode, time: selectedTime });
+        socket.emit('create_room', { roomCode: myRoomCode, time: selectedTime, uid: window.myPlayerUID });
     });
 }
 
@@ -133,7 +133,7 @@ window.onload = () => {
         overlay.style.display = 'flex';
         overlayText.innerText = "Joining friend's room...";
         
-        socket.emit('join_room', { roomCode: joinRoomCode, playerName: window.myPlayerName });
+        socket.emit('join_room', { roomCode: joinRoomCode, playerName: window.myPlayerName, uid: window.myPlayerUID });
         
         window.history.pushState({}, document.title, window.location.pathname);
     }
@@ -184,7 +184,7 @@ function handleActionBtn() {
         overlay.style.display = 'flex';
         overlayText.innerText = "Searching for random player...";
         
-        socket.emit('find_random_match', { timePreference: selectedTime, playerName: window.myPlayerName }); 
+        socket.emit('find_random_match', { timePreference: selectedTime, playerName: window.myPlayerName, uid: window.myPlayerUID }); 
         
         return;
     } 
@@ -210,6 +210,7 @@ socket.on('start_game', (data) => {
     myOnlineRole = data.role; 
     
     let oppName = data.opponentName || "Random";
+    window.opponentUID = data.opponentUid || "Unknown"; // Save their UID locally!
     document.getElementById('score-title').innerText = "Vs " + oppName;
     
     chatContainer.style.display = 'flex';
@@ -223,7 +224,7 @@ socket.on('start_game', (data) => {
                     <input type="checkbox" ${window.isChatEnabled ? 'checked' : ''} onchange="window.toggleChat(this.checked)">
                     <span class="slider round"></span>
                 </label>
-                <button onclick="reportPlayer('${oppName}')" style="background: #e74c3c; color: white; border: none; border-radius: 3px; padding: 2px 6px; font-size: 0.6rem; cursor: pointer; font-weight: bold; letter-spacing: 0.5px;">REPORT</button>
+                <button onclick="reportPlayer('${oppName}', '${window.opponentUID}')" style="background: #e74c3c; color: white; border: none; border-radius: 3px; padding: 2px 6px; font-size: 0.6rem; cursor: pointer; font-weight: bold; letter-spacing: 0.5px;">REPORT</button>
             </div>
         </div>
     `;
@@ -740,12 +741,12 @@ socket.on('opponent_forced_restart', () => {
     playSound('error'); 
 });
 
-window.reportPlayer = function(offenderName) {
+window.reportPlayer = function(offenderName, offenderUid) {
     if (confirm(`Do you want to report ${offenderName} for an inappropriate picture or offensive chat?`)) {
         if (window.sendReportToDatabase) {
-            window.sendReportToDatabase(offenderName, window.localChatHistory || []);
+            window.sendReportToDatabase(offenderName, offenderUid, window.localChatHistory || []);
         }
-        alert(`Thank you. ${offenderName} has been reported to the government of tribonastan and will be nuked.`);
+        alert(`Thank you. ${offenderName} has been reported to the administration and will be reviewed.`);
     }
 };
 

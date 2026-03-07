@@ -16,7 +16,7 @@ io.on('connection', (socket) => {
 
     socket.on('create_room', (data) => {
         socket.join(data.roomCode);
-        rooms[data.roomCode] = { player1Socket: socket, players: [socket.id], time: data.time, p1Name: data.playerName };
+        rooms[data.roomCode] = { player1Socket: socket, players: [socket.id], time: data.time, p1Name: data.playerName, p1Uid: data.uid };
         console.log(`Room ${data.roomCode} created with ${data.time}s timer.`);
     });
 
@@ -26,13 +26,14 @@ io.on('connection', (socket) => {
             socket.join(roomCode);
             rooms[roomCode].players.push(socket.id);
             rooms[roomCode].p2Name = data.playerName; 
+            rooms[roomCode].p2Uid = data.uid; 
             
             const p1Socket = rooms[roomCode].player1Socket;
             const p2Socket = socket;
             const gameTime = rooms[roomCode].time;
             
-            p1Socket.emit('start_game', { roomCode: roomCode, role: 1, time: gameTime, opponentName: rooms[roomCode].p2Name });
-            p2Socket.emit('start_game', { roomCode: roomCode, role: 2, time: gameTime, opponentName: rooms[roomCode].p1Name });
+            p1Socket.emit('start_game', { roomCode: roomCode, role: 1, time: gameTime, opponentName: rooms[roomCode].p2Name, opponentUid: rooms[roomCode].p2Uid });
+            p2Socket.emit('start_game', { roomCode: roomCode, role: 2, time: gameTime, opponentName: rooms[roomCode].p1Name, opponentUid: rooms[roomCode].p1Uid });
         } else {
             socket.emit('room_error', 'Room is full or does not exist.');
         }
@@ -47,15 +48,18 @@ io.on('connection', (socket) => {
 
             const gameTime = waitingPlayer.timePreference || 60;
             const p1Name = waitingPlayer.playerName;
+            const p1Uid = waitingPlayer.uid;
             const p2Name = data.playerName;
+            const p2Uid = data.uid;
 
-            waitingPlayer.emit('start_game', { roomCode: roomCode, role: 1, time: gameTime, opponentName: p2Name });
-            socket.emit('start_game', { roomCode: roomCode, role: 2, time: gameTime, opponentName: p1Name });
+            waitingPlayer.emit('start_game', { roomCode: roomCode, role: 1, time: gameTime, opponentName: p2Name, opponentUid: p2Uid });
+            socket.emit('start_game', { roomCode: roomCode, role: 2, time: gameTime, opponentName: p1Name, opponentUid: p1Uid });
             
             waitingPlayer = null; 
         } else {
             socket.timePreference = data.timePreference;
             socket.playerName = data.playerName; 
+            socket.uid = data.uid;
             waitingPlayer = socket;
         }
     });
@@ -78,6 +82,7 @@ io.on('connection', (socket) => {
     socket.on('send_chat', (data) => {
         socket.to(data.roomCode).emit('receive_chat', { message: data.message, pfp: data.pfp });
     });
+    
     socket.on('toggle_chat', (data) => {
         socket.to(data.roomCode).emit('opponent_toggled_chat', data.enabled);
     });
@@ -110,9 +115,7 @@ io.on('connection', (socket) => {
         for (const roomCode in rooms) {
             if (rooms[roomCode].players.includes(socket.id)) {
                 socket.to(roomCode).emit('opponent_disconnected');
-                
                 rooms[roomCode].players = rooms[roomCode].players.filter(id => id !== socket.id);
-               
                 if (rooms[roomCode].players.length === 0) {
                     delete rooms[roomCode]; 
                 } else {
